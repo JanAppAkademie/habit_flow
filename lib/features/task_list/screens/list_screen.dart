@@ -10,7 +10,19 @@ class ListScreen extends StatefulWidget {
 }
 
 class _ListScreenState extends State<ListScreen> {
-  final List<String> _items = [];
+  final List<String> _items = [
+    'Aufstehen',
+    'Zähne putze',
+    'Kurs Vorlesung',
+    'Kurs Tutorium I',
+    'Mittag',
+    'Sport',
+    'Kurs Tutorium II',
+    'Essen',
+    'Sport',
+    'TV schauen',
+    'Schlafen gehen',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -18,11 +30,7 @@ class _ListScreenState extends State<ListScreen> {
       appBar: AppBar(title: const Text('Habit Flow')),
       body: _items.isEmpty
           ? const EmptyContent()
-          : ItemList(
-              items: _items,
-              onEdit: (index, newItem) {},
-              onDelete: (index) {},
-            ),
+          : ItemList(items: _items, onEdit: (index, newItem) {}, onDelete: (index) {}),
     );
   }
 }
