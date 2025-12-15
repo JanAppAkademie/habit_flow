@@ -10,6 +10,7 @@ class EmptyContent extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.sentiment_satisfied_alt, size: 64),
+          Text("Alle Aufgaben erledigt"),
           SizedBox(height: 10),
         ],
       ),
