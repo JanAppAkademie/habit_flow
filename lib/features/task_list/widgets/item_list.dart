@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:habit_flow/core/models/habit.dart';
 
 class ItemList extends StatelessWidget {
   const ItemList({
@@ -6,65 +7,40 @@ class ItemList extends StatelessWidget {
     required this.items,
     required this.onEdit,
     required this.onDelete,
+    this.onToggle,
   });
 
-  final List<String> items;
-  final void Function(int index, String newItem) onEdit;
+  final List<Habit> items;
+  final void Function(int index) onEdit;
   final void Function(int index) onDelete;
+  final void Function(int index)? onToggle;
 
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
       itemCount: items.length,
       itemBuilder: (context, index) {
+        final habit = items[index];
         return ListTile(
-          title: Text(items[index]),
+          title: Text(habit.title),
+          subtitle: Text('Streak: ${habit.streakCount}'),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
                 icon: const Icon(Icons.edit),
-                onPressed: () {
-                  TextEditingController editController = TextEditingController(
-                    text: items[index],
-                  );
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: const Text('Task bearbeiten'),
-                        content: TextField(
-                          autofocus: true,
-                          controller: editController,
-                          decoration: const InputDecoration(
-                            hintText: "Task bearbeiten",
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            child: const Text('Abbrechen'),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                          TextButton(
-                            child: const Text('Speichern'),
-                            onPressed: () {
-                              onEdit(index, editController.text);
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
+                onPressed: () => onEdit(index),
               ),
               IconButton(
                 icon: const Icon(Icons.delete),
-                onPressed: () {
-                  onDelete(index);
-                },
+                onPressed: () => onDelete(index),
+              ),
+              IconButton(
+                icon: Icon(
+                  habit.isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: habit.isDone ? Colors.green : null,
+                ),
+                onPressed: () => onToggle?.call(index),
               ),
             ],
           ),
