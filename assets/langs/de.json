@@ -1,0 +1,20 @@
+{
+  "habit_flow": "Habit Flow",
+  "notifications_enable": "Benachrichtigungen aktivieren",
+  "notifications_disable": "Benachrichtigungen deaktivieren",
+  "notifications_enabled": "Benachrichtigungen aktiviert",
+  "notifications_disabled": "Benachrichtigungen deaktiviert",
+  "reminder_set": "Erinnerungszeit festlegen",
+  "reminder_change": "Erinnerungszeit: {time} ändern",
+  "reminder_set_snackbar": "Erinnerungszeit gesetzt: {time}",
+  "done_of_total": "{done} von {total} erledigt",
+  "streak": "🔥 Streak: {days} Tage",
+  "edit": "Bearbeiten",
+  "delete": "Löschen",
+  "delete_confirm_title": "Löschen?",
+  "delete_confirm_text": "Möchten Sie \"{habit}\" wirklich löschen?",
+  "cancel": "Abbrechen",
+  "add": "Hinzufügen",
+  "error": "Fehler: {error}",
+  "loading": "Lade..."
+}
