@@ -9,37 +9,24 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
-  # Deine Libraries
-  flutter_riverpod: ^2.5.1  # ^3.0.0 ist noch in Pre-Release/Beta, 2.5.1 ist stable. Falls du 3 willst, lass es stehen.
+  flutter_riverpod: ^2.5.1 
   go_router: ^14.8.1
   dio: ^5.8.0+1
   shared_preferences: ^2.5.3
   google_fonts: ^6.2.1
   shimmer: ^3.0.0
   cupertino_icons: ^1.0.8
-  
-
-  # Hive Setup (Nur das Original, kein CE, passend zum Generator)
+  supabase_flutter: ^2.12.0
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  
-  # JSON
   json_annotation: ^4.9.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  
-  # Achtung: Lints 5.0 beißt sich oft mit dem alten Hive Generator. 
-  # Falls es knallt, geh auf ^4.0.0 runter.
   flutter_lints: ^4.0.0 
-  
-  # Build Tools
   build_runner: ^2.4.13
   json_serializable: ^6.8.0
-  
-  # WICHTIG: Hive Generator funktioniert nur mit dem normalen "hive", nicht "hive_ce"
   hive_generator: ^2.0.1
 
 flutter:
