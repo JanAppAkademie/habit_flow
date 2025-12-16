@@ -1,77 +1,59 @@
 import 'package:flutter/material.dart';
 
+import 'package:habit_flow/features/task_list/models/task.dart';
+
 class ItemList extends StatelessWidget {
   const ItemList({
     super.key,
-    required this.items,
+    required this.tasks,
+    required this.onToggle,
     required this.onEdit,
     required this.onDelete,
   });
 
-  final List<String> items;
-  final void Function(int index, String newItem) onEdit;
-  final void Function(int index) onDelete;
+  final List<Task> tasks;
+  final void Function(Task task) onToggle;
+  final void Function(Task task) onEdit;
+  final void Function(Task task) onDelete;
 
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
-      itemCount: items.length,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: tasks.length,
       itemBuilder: (context, index) {
-        return ListTile(
-          title: Text(items[index]),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () {
-                  TextEditingController editController = TextEditingController(
-                    text: items[index],
-                  );
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: const Text('Task bearbeiten'),
-                        content: TextField(
-                          autofocus: true,
-                          controller: editController,
-                          decoration: const InputDecoration(
-                            hintText: "Task bearbeiten",
-                          ),
-                        ),
-                        actions: [
-                          TextButton(
-                            child: const Text('Abbrechen'),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                          TextButton(
-                            child: const Text('Speichern'),
-                            onPressed: () {
-                              onEdit(index, editController.text);
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
+        final task = tasks[index];
+        return Card(
+          child: ListTile(
+            leading: Checkbox(
+              value: task.isCompleted,
+              onChanged: (_) => onToggle(task),
+            ),
+            title: Text(
+              task.title,
+              style: TextStyle(
+                decoration: task.isCompleted
+                    ? TextDecoration.lineThrough
+                    : null,
               ),
-              IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () {
-                  onDelete(index);
-                },
-              ),
-            ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => onEdit(task),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () => onDelete(task),
+                ),
+              ],
+            ),
           ),
         );
       },
-      separatorBuilder: (context, index) =>
-          const Divider(thickness: 1, color: Colors.white10),
+      separatorBuilder: (context, index) => const SizedBox(height: 4),
     );
   }
 }
