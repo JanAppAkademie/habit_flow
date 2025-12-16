@@ -1,4 +1,5 @@
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
@@ -73,7 +74,7 @@ class _QuoteWidgetState extends State<QuoteWidget> {
                 ],
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('Fehler beim Laden des Zitats', style: const TextStyle(color: Colors.red))),
+              error: (e, _) => Center(child: Text('splash.quote_error'.tr(), style: const TextStyle(color: Colors.red))),
             ),
           ),
         );

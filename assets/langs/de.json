@@ -16,5 +16,35 @@
   "cancel": "Abbrechen",
   "add": "Hinzufügen",
   "error": "Fehler: {error}",
-  "loading": "Lade..."
+
+  "loading": "Lade...",
+
+  "settings": {
+    "title": "Einstellungen",
+    "appearance": "Darstellung",
+    "system": "System",
+    "dark": "Dunkel",
+    "light": "Hell"
+  },
+
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "reminder_time": "Erinnerungszeit",
+    "not_set": "Nicht gesetzt"
+  },
+
+  "sync": {
+    "synced": "Synchronisiert",
+    "syncing": "Synchronisiere...",
+    "finished": "Synchronisation abgeschlossen",
+    "error": "Sync-Fehler: {error}"
+  }
+  ,
+  "splash": {
+    "welcome": "Willkommen zu Habit Flow",
+    "quote_error": "Fehler beim Laden des Zitats"
+  }
 }
+

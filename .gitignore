@@ -46,3 +46,8 @@ app.*.map.json
 
 # FVM Version Cache
 .fvm/
+
+# Local environment file (contains Supabase anon key) - do NOT commit
+.env
+# Ignore any env placed under assets/supabase too
+assets/supabase/.env

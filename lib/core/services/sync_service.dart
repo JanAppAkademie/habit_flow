@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:habit_flow/features/task_list/models/habit.dart';
+import 'package:habit_flow/core/services/device_id.dart';
 import 'package:flutter/foundation.dart';
 // import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -22,15 +23,12 @@ class SyncService {
 
   Future<void> init() async {
     _connectivitySub = Connectivity().onConnectivityChanged.listen((result) {
-
-      if (result.any((r) => r != ConnectivityResult.none)) {
+      // `onConnectivityChanged` delivers a single ConnectivityResult.
+      // Older code attempted to treat it like a list (calling `.any(...)`).
+      // Check the single enum value instead.
+      if (result.any((status) => status != ConnectivityResult.none)) {
         trySync();
       }
-
-      
-     // if (result != ConnectivityResult.none) {
-     //   trySync();
-     // }
     });
   }
 
@@ -43,8 +41,11 @@ class SyncService {
     // action: 'insert', 'update', 'delete'
     // Ersetze ggf. vorhandene Einträge mit gleicher ID
     _queue.removeWhere((entry) => entry['habit']['id'] == habit.id);
+    final deviceId = await DeviceId.getOrCreate();
+    final payload = Map<String, dynamic>.from(habit.toJson());
+    payload['device_id'] = deviceId;
     _queue.add({
-      'habit': habit.toJson(),
+      'habit': payload,
       'action': action,
     });
     isSynced.value = false;

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,7 +39,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 baseColor: Colors.white,
                 highlightColor: const Color.fromRGBO(228, 132, 255, 0.724),
                 child: Text(
-                  'Willkommen zu Habit Flow',
+                  'splash.welcome'.tr(),
                   style: GoogleFonts.robotoMono(
                     textStyle: Theme.of(context).textTheme.headlineMedium
                         ?.copyWith(fontSize: 36, fontWeight: FontWeight.w800),
@@ -64,7 +65,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                   ],
                 ),
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Text('Fehler beim Laden des Zitats', style: const TextStyle(color: Colors.red)),
+                error: (e, _) => Text('splash.quote_error'.tr(), style: const TextStyle(color: Colors.red)),
               ),
             ],
           ),

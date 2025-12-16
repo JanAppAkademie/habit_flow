@@ -3,18 +3,22 @@ class Habit {
   final String name;
   final String description;
   final DateTime createdAt;
+  final DateTime updatedAt;
   final bool completedToday;
   final List<DateTime> completedDates; // Alle Tage, an denen Habit erledigt wurde
   final DateTime? lastCompletedAt;
+  final bool needsSync;
 
   Habit({
     required this.id,
     required this.name,
     required this.description,
     required this.createdAt,
+    required this.updatedAt,
     required this.completedToday,
     required this.completedDates,
     this.lastCompletedAt,
+    this.needsSync = false,
   });
 
   /// Berechnet die aktuelle Streak (aufeinanderfolgende Tage) rückwärts von heute
@@ -45,18 +49,22 @@ class Habit {
     String? name,
     String? description,
     DateTime? createdAt,
+    DateTime? updatedAt,
     bool? completedToday,
     List<DateTime>? completedDates,
     DateTime? lastCompletedAt,
+    bool? needsSync,
   }) {
     return Habit(
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       completedToday: completedToday ?? this.completedToday,
       completedDates: completedDates ?? this.completedDates,
       lastCompletedAt: lastCompletedAt ?? this.lastCompletedAt,
+      needsSync: needsSync ?? this.needsSync,
     );
   }
 
@@ -65,29 +73,33 @@ class Habit {
     if (identical(this, other)) return true;
 
     return other is Habit &&
-        other.id == id &&
-        other.name == name &&
-        other.description == description &&
-        other.createdAt == createdAt &&
-        other.completedToday == completedToday &&
-        other.completedDates == completedDates &&
-        other.lastCompletedAt == lastCompletedAt;
+      other.id == id &&
+      other.name == name &&
+      other.description == description &&
+      other.createdAt == createdAt &&
+      other.updatedAt == updatedAt &&
+      other.completedToday == completedToday &&
+      other.completedDates == completedDates &&
+      other.lastCompletedAt == lastCompletedAt &&
+      other.needsSync == needsSync;
   }
 
   @override
   int get hashCode {
     return id.hashCode ^
-        name.hashCode ^
-        description.hashCode ^
-        createdAt.hashCode ^
-        completedToday.hashCode ^
-        completedDates.hashCode ^
-        lastCompletedAt.hashCode;
+      name.hashCode ^
+      description.hashCode ^
+      createdAt.hashCode ^
+      updatedAt.hashCode ^
+      completedToday.hashCode ^
+      completedDates.hashCode ^
+      lastCompletedAt.hashCode ^
+      needsSync.hashCode;
   }
 
   @override
   String toString() {
-    return 'Habit(id: $id, name: $name, description: $description, createdAt: $createdAt, completedToday: $completedToday, completedDates: $completedDates, lastCompletedAt: $lastCompletedAt)';
+    return 'Habit(id: $id, name: $name, description: $description, createdAt: $createdAt, updatedAt: $updatedAt, completedToday: $completedToday, completedDates: $completedDates, lastCompletedAt: $lastCompletedAt, needsSync: $needsSync)';
   }
 
   Map<String, dynamic> toJson() {
@@ -96,9 +108,11 @@ class Habit {
       'name': name,
       'description': description,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
       'completed_today': completedToday,
       'completed_dates': completedDates.map((d) => d.toIso8601String()).toList(),
       'last_completed_at': lastCompletedAt?.toIso8601String(),
+      'needs_sync': needsSync,
     };
   }
 
@@ -107,14 +121,46 @@ class Habit {
       id: json['id'] as String,
       name: json['name'] as String,
       description: json['description'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      completedToday: json['completed_today'] as bool,
-      completedDates: ((json['completed_dates'] as List?) ?? [])
-        .map((d) => DateTime.parse(d as String))
-        .toList(),
-      lastCompletedAt: json['last_completed_at'] != null
-        ? DateTime.parse(json['last_completed_at'] as String)
-        : null,
+      createdAt: _toDateTimeNonNull(json['created_at']),
+      updatedAt: _toDateTimeNonNull(json['updated_at']),
+      completedToday: _toBool(json['completed_today']),
+      completedDates: (((json['completed_dates'] as List?) ?? [])
+        .map((d) => _toDateTime(d))
+        .where((d) => d != null)
+        .map((d) => d as DateTime)
+        .toList()),
+      lastCompletedAt: _toDateTime(json['last_completed_at']),
+      needsSync: _toBool(json['needs_sync']),
     );
   }
+}
+
+// Helper conversions used for defensive JSON parsing
+DateTime? _toDateTime(dynamic v) {
+  if (v == null) return null;
+  if (v is DateTime) return v;
+  if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+  if (v is String) {
+    try {
+      return DateTime.parse(v);
+    } catch (_) {
+      final maybe = int.tryParse(v);
+      if (maybe != null) return DateTime.fromMillisecondsSinceEpoch(maybe);
+    }
+  }
+  return null;
+}
+
+DateTime _toDateTimeNonNull(dynamic v) => _toDateTime(v) ?? DateTime.now();
+
+bool _toBool(dynamic v) {
+  if (v == null) return false;
+  if (v is bool) return v;
+  if (v is int) return v != 0;
+  if (v is String) {
+    final s = v.toLowerCase();
+    if (s == 'true' || s == '1' || s == 't') return true;
+    return false;
+  }
+  return false;
 }

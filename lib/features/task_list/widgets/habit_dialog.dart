@@ -78,15 +78,19 @@ class _HabitDialogState extends ConsumerState<HabitDialog> {
                 ? widget.habit!.copyWith(
                     name: _nameController.text,
                     description: _descriptionController.text,
+                    updatedAt: DateTime.now(),
+                    needsSync: true,
                   )
                 : Habit(
                     id: DateTime.now().millisecondsSinceEpoch.toString(),
                     name: _nameController.text,
                     description: _descriptionController.text,
                     createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
                     completedToday: false,
                     completedDates: [],
                     lastCompletedAt: null,
+                    needsSync: true,
                   );
 
             Navigator.pop(context, habit);
