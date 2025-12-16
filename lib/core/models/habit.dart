@@ -1,6 +1,16 @@
+import 'package:hive_ce/hive.dart';
+
+part 'habit.g.dart';
+
+@HiveType(typeId: 0)
 class Habit {
+  @HiveField(0)
   final String title;
+
+  @HiveField(1)
   final bool isDone;
+
+  @HiveField(2)
   final int streakCount;
 
   Habit({

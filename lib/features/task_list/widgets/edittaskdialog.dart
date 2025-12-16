@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:habit_flow/core/providers/task_provider.dart';
 
-class EditTaskDialog extends ConsumerWidget {
-  const EditTaskDialog({super.key});
+class EditTaskDialog extends StatelessWidget {
+  final String? initialValue;                // optionaler Startwert
+  final void Function(String) onSave;        // Callback für Speichern
+
+  const EditTaskDialog({
+    super.key,
+    this.initialValue,
+    required this.onSave,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
+  Widget build(BuildContext context) {
+    final controller = TextEditingController(text: initialValue ?? '');
 
     return AlertDialog(
-      title: const Text('Task bearbeiten'),
+      title: Text(initialValue == null ? 'Neue Aufgabe' : 'Aufgabe bearbeiten'),
       content: TextField(
         controller: controller,
         decoration: const InputDecoration(
@@ -24,7 +29,7 @@ class EditTaskDialog extends ConsumerWidget {
         ),
         ElevatedButton(
           onPressed: () {
-            ref.read(tasksProvider.notifier).addTask(controller.text);
+            onSave(controller.text);         // Übergibt den Wert zurück
             Navigator.pop(context);
           },
           child: const Text('Speichern'),
