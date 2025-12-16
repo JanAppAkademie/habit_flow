@@ -10,19 +10,7 @@ class ListScreen extends StatefulWidget {
 }
 
 class _ListScreenState extends State<ListScreen> {
-  final List<String> _items = [
-    'Aufstehen',
-    'Zähne putze',
-    'Kurs Vorlesung',
-    'Kurs Tutorium I',
-    'Mittag',
-    'Sport',
-    'Kurs Tutorium II',
-    'Essen',
-    'Sport',
-    'TV schauen',
-    'Schlafen gehen',
-  ];
+  final List<String> _items = ['Dummy'];
 
   @override
   Widget build(BuildContext context) {

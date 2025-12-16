@@ -39,8 +39,9 @@ class _SplashScreenState extends State<SplashScreen> {
                 child: Text(
                   'Willkommen zu Habit Flow',
                   style: GoogleFonts.robotoMono(
-                    textStyle: Theme.of(context).textTheme.headlineMedium
-                        ?.copyWith(fontSize: 36, fontWeight: FontWeight.w800),
+                    textStyle: Theme.of(
+                      context,
+                    ).textTheme.headlineMedium?.copyWith(fontSize: 36, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),

@@ -15,12 +15,11 @@ class App extends StatelessWidget {
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
-        textTheme: GoogleFonts.robotoMonoTextTheme(
-          ThemeData(brightness: Brightness.dark).textTheme,
-        ),
+        textTheme: GoogleFonts.robotoMonoTextTheme(ThemeData(brightness: Brightness.dark).textTheme),
       ),
       themeMode: ThemeMode.dark,
       title: 'Habit Flow',
+
       routerConfig: appRouter,
     );
   }
