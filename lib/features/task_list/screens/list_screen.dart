@@ -11,7 +11,7 @@ import 'package:habit_flow/core/router/app_router.dart';
 import 'package:go_router/go_router.dart';
 import 'package:habit_flow/features/task_list/widgets/empty_content.dart';
 import 'package:habit_flow/features/task_list/widgets/habit_dialog.dart';
-import 'package:habit_flow/features/splash/quote_widget.dart';
+import 'package:habit_flow/features/splash/widgets/quote_widget.dart';
 
 
 class ListScreen extends ConsumerWidget {

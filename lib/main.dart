@@ -5,7 +5,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:habit_flow/app.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:habit_flow/features/task_list/services/notification_service.dart';
+import 'package:habit_flow/core/services/notification_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 
