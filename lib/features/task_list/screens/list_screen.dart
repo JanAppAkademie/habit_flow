@@ -7,6 +7,7 @@ import 'package:habit_flow/core/providers/habit_provider.dart';
 import 'package:habit_flow/core/providers/theme_provider.dart';
 import 'package:habit_flow/core/providers/sync_status_provider.dart';
 import 'package:habit_flow/core/providers/connectivity_provider.dart';
+import 'package:habit_flow/core/providers/sticky_offline_provider.dart';
 import 'package:habit_flow/core/router/app_router.dart';
 import 'package:go_router/go_router.dart';
 import 'package:habit_flow/features/task_list/widgets/empty_content.dart';
@@ -30,6 +31,7 @@ class ListScreen extends ConsumerWidget {
         final synced = ref.watch(syncStatusProvider);
         final onlineAsync = ref.watch(connectivityProvider);
         final online = onlineAsync.when(data: (v) => v, loading: () => true, error: (_,__) => false);
+        final sticky = ref.watch(stickyOfflineProvider);
 
         return Scaffold(
           appBar: AppBar(
@@ -38,12 +40,14 @@ class ListScreen extends ConsumerWidget {
               child: IconButton(
                 iconSize: 26,
                 padding: EdgeInsets.zero,
-                icon: Icon(
-                  // Show cloud icon when synced, show sync icon while an active sync is running
-                  synced ? Icons.cloud_done : Icons.sync,
-                  color: (!online) ? Colors.redAccent : (synced ? Colors.green : Colors.white),
-                  size: 26,
-                ),
+                  icon: Icon(
+                    // Show cloud icon when synced, show sync icon while an active sync is running
+                    synced ? Icons.cloud_done : Icons.sync,
+                    color: sticky
+                        ? Colors.red
+                        : (!online ? Colors.redAccent : (synced ? Colors.green : Theme.of(context).colorScheme.onSurface)),
+                    size: 26,
+                  ),
                 onPressed: () async {
                   try {
                     await repository.fullSync();
