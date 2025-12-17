@@ -1,37 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:habit_flow/core/router/app_router.dart';
-import 'package:habit_flow/features/quotes/data/quote_service.dart';
+import 'package:habit_flow/features/quotes/controllers/quote_notifier.dart';
 import 'package:habit_flow/features/quotes/models/quote.dart';
+import 'package:habit_flow/features/task_list/controllers/habit_list_controller.dart';
 import 'package:habit_flow/features/task_list/models/habit.dart';
 import 'package:habit_flow/features/task_list/widgets/empty_content.dart';
 import 'package:habit_flow/features/task_list/widgets/item_list.dart';
 
-class ListScreen extends StatefulWidget {
+class ListScreen extends ConsumerWidget {
   const ListScreen({super.key});
 
   @override
-  State<ListScreen> createState() => _ListScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final habits = ref.watch(habitListControllerProvider);
+    final quoteState = ref.watch(quoteProvider);
 
-class _ListScreenState extends State<ListScreen> {
-  Box<Habit> get _habitBox => Hive.box<Habit>(Habit.boxName);
-  final QuoteService _quoteService = QuoteService();
-
-  Quote? _quote;
-  bool _isQuoteLoading = false;
-  String? _quoteError;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadQuote();
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Habit Flow'),
@@ -43,60 +29,46 @@ class _ListScreenState extends State<ListScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddHabitDialog,
+        onPressed: () => _showAddHabitDialog(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('Habit'),
       ),
-      body: ValueListenableBuilder<Box<Habit>>(
-        valueListenable: _habitBox.listenable(),
-        builder: (context, box, _) {
-          final habits = box.values.toList(growable: false);
-          final completedCount =
-              habits.where((habit) => habit.isCompletedToday).length;
-          final bestStreak = habits.fold<int>(
-            0,
-            (previousValue, habit) =>
-                habit.currentStreak > previousValue ? habit.currentStreak : previousValue,
-          );
-
-          return RefreshIndicator(
-            onRefresh: _refreshContent,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
-              children: [
-                _buildQuoteCard(context),
-                const SizedBox(height: 16),
-                _buildStreakCard(
-                  context,
-                  completedCount: completedCount,
-                  totalHabits: habits.length,
-                  bestStreak: bestStreak,
-                ),
-                const SizedBox(height: 16),
-                if (habits.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 64),
-                    child: EmptyContent(),
-                  )
-                else
-                  ItemList(
-                    items: habits,
-                    onEdit: _editHabit,
-                    onDelete: _deleteHabit,
-                    onToggleCompletion: _toggleHabitCompletion,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                  ),
-              ],
+      body: RefreshIndicator(
+        onRefresh: () => ref.refresh(quoteProvider.future),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 48),
+          children: [
+            _buildQuoteCard(context, quoteState, ref),
+            const SizedBox(height: 16),
+            _buildStreakCard(
+              context,
+              habits: habits,
             ),
-          );
-        },
+            const SizedBox(height: 16),
+            if (habits.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 64),
+                child: EmptyContent(),
+              )
+            else
+              ItemList(
+                items: habits,
+                onEdit: (habit, newItem) =>
+                    _editHabit(ref, habit, newItem),
+                onDelete: (habit) => _deleteHabit(ref, habit),
+                onToggleCompletion: (habit) =>
+                    _toggleHabitCompletion(ref, habit),
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  Future<void> _showAddHabitDialog() async {
+  Future<void> _showAddHabitDialog(BuildContext context, WidgetRef ref) async {
     final controller = TextEditingController();
 
     await showDialog(
@@ -111,7 +83,7 @@ class _ListScreenState extends State<ListScreen> {
             decoration: const InputDecoration(
               hintText: 'z. B. 10 Minuten laufen',
             ),
-            onSubmitted: (_) => _submitNewHabit(controller),
+            onSubmitted: (_) => _submitNewHabit(context, ref, controller),
           ),
           actions: [
             TextButton(
@@ -119,7 +91,8 @@ class _ListScreenState extends State<ListScreen> {
               child: const Text('Abbrechen'),
             ),
             TextButton(
-              onPressed: () => _submitNewHabit(controller),
+              onPressed: () =>
+                  _submitNewHabit(context, ref, controller),
               child: const Text('Speichern'),
             ),
           ],
@@ -128,7 +101,11 @@ class _ListScreenState extends State<ListScreen> {
     );
   }
 
-  void _submitNewHabit(TextEditingController controller) {
+  void _submitNewHabit(
+    BuildContext context,
+    WidgetRef ref,
+    TextEditingController controller,
+  ) {
     final text = controller.text.trim();
 
     if (text.isEmpty) {
@@ -136,67 +113,32 @@ class _ListScreenState extends State<ListScreen> {
       return;
     }
 
-    _habitBox.add(Habit(title: text));
+    ref.read(habitListControllerProvider.notifier).addHabit(text);
     Navigator.of(context).pop();
   }
 
-  void _editHabit(Habit habit, String newTitle) {
-    final trimmed = newTitle.trim();
-    if (trimmed.isEmpty) {
-      return;
-    }
-
-    habit.title = trimmed;
-    habit.save();
+  void _editHabit(WidgetRef ref, Habit habit, String newTitle) {
+    ref.read(habitListControllerProvider.notifier).editHabit(
+          habit,
+          newTitle,
+        );
   }
 
-  void _deleteHabit(Habit habit) {
-    habit.delete();
+  void _deleteHabit(WidgetRef ref, Habit habit) {
+    ref.read(habitListControllerProvider.notifier).deleteHabit(habit);
   }
 
-  void _toggleHabitCompletion(Habit habit) {
-    if (habit.isCompletedToday) {
-      habit.resetCompletion();
-    } else {
-      habit.markCompletedToday();
-    }
-    habit.save();
+  void _toggleHabitCompletion(WidgetRef ref, Habit habit) {
+    ref
+        .read(habitListControllerProvider.notifier)
+        .toggleHabitCompletion(habit);
   }
 
-  Future<void> _loadQuote() async {
-    if (mounted) {
-      setState(() {
-        _isQuoteLoading = true;
-        _quoteError = null;
-      });
-    }
-
-    try {
-      final quote = await _quoteService.fetchRandomQuote();
-      if (!mounted) return;
-      setState(() {
-        _quote = quote;
-        _quoteError = null;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _quoteError = 'Zitat konnte nicht geladen werden. Bitte versuche es erneut.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isQuoteLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _refreshContent() async {
-    await _loadQuote();
-  }
-
-  Widget _buildQuoteCard(BuildContext context) {
+  Widget _buildQuoteCard(
+    BuildContext context,
+    AsyncValue<Quote> quoteState,
+    WidgetRef ref,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     final cardBackground = LinearGradient(
       colors: [
@@ -239,50 +181,47 @@ class _ListScreenState extends State<ListScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.refresh, color: Colors.white),
-                onPressed: _isQuoteLoading ? null : _loadQuote,
+                onPressed: quoteState.isLoading
+                    ? null
+                    : () => ref.refresh(quoteProvider.future),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          if (_isQuoteLoading && _quote == null)
-            const Center(child: CircularProgressIndicator.adaptive())
-          else if (_quoteError != null)
-            Text(
-              _quoteError!,
+          quoteState.when(
+            loading: () =>
+                const Center(child: CircularProgressIndicator.adaptive()),
+            error: (_, __) => Text(
+              'Zitat konnte nicht geladen werden. Bitte versuche es erneut.',
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
                   ?.copyWith(color: Colors.white),
-            )
-          else if (_quote != null)
-            Column(
+            ),
+            data: (quote) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '„${_quote!.text}“',
+                  '„${quote.text}“',
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+                      ?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _quote!.author,
+                  quote.author,
                   style: Theme.of(context)
                       .textTheme
                       .bodyMedium
                       ?.copyWith(color: Colors.white70, fontStyle: FontStyle.italic),
                 ),
               ],
-            )
-          else
-            Text(
-              'Ziehe nach unten, um ein neues Zitat zu laden.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: Colors.white70),
             ),
+          ),
         ],
       ),
     );
@@ -290,10 +229,16 @@ class _ListScreenState extends State<ListScreen> {
 
   Widget _buildStreakCard(
     BuildContext context, {
-      required int completedCount,
-    required int totalHabits,
-    required int bestStreak,
+    required List<Habit> habits,
   }) {
+    final totalHabits = habits.length;
+    final completedCount =
+        habits.where((habit) => habit.isCompletedToday).length;
+    final bestStreak = habits.fold<int>(
+      0,
+      (previousValue, habit) =>
+          habit.currentStreak > previousValue ? habit.currentStreak : previousValue,
+    );
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(

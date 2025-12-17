@@ -1,32 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_flow/core/router/app_router.dart';
 import 'package:habit_flow/features/settings/controllers/settings_controller.dart';
-import 'package:habit_flow/features/settings/widgets/settings_scope.dart';
 
 const Color _accentGreen = Color(0xFF22C55E);
 
-class App extends StatelessWidget {
-  const App({super.key, required this.settingsController});
-
-  final SettingsController settingsController;
+class App extends ConsumerWidget {
+  const App({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return SettingsScope(
-      controller: settingsController,
-      child: AnimatedBuilder(
-        animation: settingsController,
-        builder: (context, _) {
-          return MaterialApp.router(
-            debugShowCheckedModeBanner: false,
-            theme: _buildTheme(Brightness.light),
-            darkTheme: _buildTheme(Brightness.dark),
-            themeMode: settingsController.themeMode,
-            title: 'Habit Flow',
-            routerConfig: appRouter,
-          );
-        },
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsController = ref.watch(settingsControllerProvider);
+
+    return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
+      theme: _buildTheme(Brightness.light),
+      darkTheme: _buildTheme(Brightness.dark),
+      themeMode: settingsController.themeMode,
+      title: 'Habit Flow',
+      routerConfig: appRouter,
     );
   }
 

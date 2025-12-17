@@ -1,11 +1,7 @@
 import 'package:hive_ce/hive.dart';
 
 class Habit extends HiveObject {
-  Habit({
-    required this.title,
-    this.lastCompletionDate,
-    this.streakCount = 0,
-  });
+  Habit({required this.title, this.lastCompletionDate, this.streakCount = 0});
 
   static const boxName = 'habits';
 
@@ -35,13 +31,15 @@ class Habit extends HiveObject {
 
   void markCompletedToday() {
     final today = _normalizeDate(DateTime.now());
-    final last = lastCompletionDate != null ? _normalizeDate(lastCompletionDate!) : null;
+    final last = lastCompletionDate != null
+        ? _normalizeDate(lastCompletionDate!)
+        : null;
     final streakBase = currentStreak;
 
-    if (last != null && _isSameDay(last, today.subtract(const Duration(days: 1)))) {
+    if (last != null &&
+        _isSameDay(last, today.subtract(const Duration(days: 1)))) {
       streakCount = streakBase + 1;
     } else if (last != null && _isSameDay(last, today)) {
-      // Already completed today; nothing to do.
       return;
     } else {
       streakCount = 1;
@@ -58,7 +56,8 @@ class Habit extends HiveObject {
   static bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
-  static DateTime _normalizeDate(DateTime date) => DateTime(date.year, date.month, date.day);
+  static DateTime _normalizeDate(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 }
 
 class HabitAdapter extends TypeAdapter<Habit> {
@@ -83,7 +82,9 @@ class HabitAdapter extends TypeAdapter<Habit> {
       lastCompletion = Habit._normalizeDate(DateTime.now());
     }
 
-    final streak = rawStreak is int ? rawStreak : (lastCompletion != null ? 1 : 0);
+    final streak = rawStreak is int
+        ? rawStreak
+        : (lastCompletion != null ? 1 : 0);
 
     return Habit(
       title: title,
