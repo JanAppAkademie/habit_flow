@@ -46,3 +46,4 @@ flutter:
   assets:
     - assets/langs/de.json
     - assets/supabase/.env
+    - assets/motivation/motivation.json
