@@ -11,84 +11,15 @@ import 'package:habit_flow/core/router/app_router.dart';
 import 'package:go_router/go_router.dart';
 import 'package:habit_flow/features/task_list/widgets/empty_content.dart';
 import 'package:habit_flow/features/task_list/widgets/habit_dialog.dart';
-import 'dart:async';
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
-import 'dart:math';
+import 'package:habit_flow/features/task_list/widgets/motivation_banner.dart';
 
 
-class ListScreen extends ConsumerStatefulWidget {
+class ListScreen extends ConsumerWidget {
   const ListScreen({super.key});
 
   @override
-  ConsumerState<ListScreen> createState() => _ListScreenState();
-}
-
-class _ListScreenState extends ConsumerState<ListScreen> {
-  List<String> _motivations = [];
-  int _currentIdx = 0;
-  Timer? _timer;
-  bool _loadingMots = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMotivations();
-  }
-
-  Future<void> _loadMotivations() async {
-    try {
-      final raw = await rootBundle.loadString('assets/motivation/motivation.json');
-      final data = json.decode(raw) as List<dynamic>;
-      final items = data.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
-      if (mounted) {
-        setState(() {
-          _motivations = items;
-          _loadingMots = false;
-          if (_motivations.isNotEmpty) {
-            _currentIdx = Random().nextInt(_motivations.length);
-          }
-        });
-      }
-      _startTimer();
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _motivations = [];
-          _loadingMots = false;
-        });
-      }
-    }
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    if (_motivations.isEmpty) return;
-    // rotate immediately after one minute
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
-      if (!mounted) return;
-      setState(() {
-        if (_motivations.length == 1) return;
-        int next;
-        // pick a random index different from current to avoid immediate repeats
-        do {
-          next = Random().nextInt(_motivations.length);
-        } while (next == _currentIdx && _motivations.length > 1);
-        _currentIdx = next;
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final repository = getHabitRepository();
-    
 
     return ref.watch(habitProvider).when(
       data: (habits) {
@@ -153,31 +84,10 @@ class _ListScreenState extends ConsumerState<ListScreen> {
           ),
           body: Column(
             children: [
-              // Motivationsspruch (aus assets) — wechselt minütlich
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0, left: 16, right: 16, bottom: 0),
-                child: _loadingMots
-                    ? const SizedBox(height: 48, child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
-                    : (_motivations.isEmpty
-                        ? const SizedBox.shrink()
-                        : Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 400),
-                              transitionBuilder: (child, anim) => FadeTransition(opacity: anim, child: child),
-                              child: Text(
-                                _motivations[_currentIdx],
-                                key: ValueKey<int>(_currentIdx),
-                                style: Theme.of(context).textTheme.bodyMedium,
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          )),
+              // Motivation banner (extracted to provider + widget)
+              const Padding(
+                padding: EdgeInsets.only(top: 8.0, left: 16, right: 16, bottom: 0),
+                child: MotivationBanner(),
               ),
               // Progress indicator
               if (habits.isNotEmpty)
@@ -230,9 +140,9 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                             child: const EmptyContent(),
                           ),
                         )
-                      : ListView.builder(
+                        : ListView.builder(
                           itemCount: habits.length,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                           itemBuilder: (context, index) {
                             final habit = habits[index];
                             return Padding(
