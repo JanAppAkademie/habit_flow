@@ -27,14 +27,15 @@
 - **Codegen**: `build_runner` wird verwendet, um Hive-Adapter zu erzeugen. Änderungen am Modell erfordern ggf. Regeneration der Adapter.
 - **Fehlerhärtung**: Adapter + Repository enthalten defensiven Code, um Migrationen von alten Formaten sicher durchzuführen.
 
-**Dateien & Orte (wichtig)**
-- **App-Entry**: `lib/main.dart` — init Hive, Supabase, Repository, NotificationService und EasyLocalization.
-- **UI**: `lib/app.dart`, `lib/features/task_list/screens/list_screen.dart` (Habit-Liste mit Pull-to-Refresh und Cloud-Icon).
-- **Model/Adapter**: `lib/features/task_list/models/habit.dart` und die zugehörigen Hive Adapter-Dateien.
+ **Dateien & Orte (wichtig)**
+- **App-Entry**: `lib/main.dart` — initialisiert Hive, Supabase, Repository, NotificationService und EasyLocalization.
+- **UI**: `lib/app.dart` und Bildschirm-Komponenten unter `lib/features/` (z. B. `lib/features/task_list/screens/list_screen.dart`, `lib/features/settings/`).
+- **Model/Adapter**: `lib/features/task_list/models/` enthält `habit.dart` und die generierten Hive-Adapter.
 - **Repository/Sync**: `lib/features/task_list/models/habit_repository.dart`, `lib/core/services/sync_service.dart`.
-- **Device ID**: `lib/core/services/device_id.dart`.
-- **Localization**: `assets/langs/de.json`.
-- **Env-Beispiel**: `.env.example` (als Vorlage für `assets/supabase/.env`).
+- **Globale Services & Provider**: `lib/core/services/` (z. B. `notification_service.dart`, `device_id.dart`, `quote_api.dart`) und `lib/core/providers/` (z. B. `connectivity_provider.dart`, `theme_provider.dart`, `sync_status_provider.dart`, `notification_provider.dart`, `quote_provider.dart`).
+- **Localization**: `assets/langs/de.json` enthält die deutschen Übersetzungen.
+- **Env-Dateien**: `assets/supabase/.env` (lokal, in `.gitignore`) und `assets/supabase/.env.example` als Vorlage.
+- **Generated files / codegen**: `lib/hive_registrar.g.dart` (und weitere `*.g.dart`-Dateien nach `build_runner`).
 
 **Wichtige Befehle / Setup**
 - Abhängigkeiten installieren:
@@ -85,28 +86,45 @@ habit_flow/
 ├─ README.md
 ├─ android/
 │  ├─ build.gradle.kts
-│  ├─ app/
 │  └─ ...
 ├─ assets/
 │  ├─ langs/
 │  │  └─ de.json
 │  └─ supabase/
-│     └─ .env   # lokal, in .gitignore
+│     ├─ .env         # lokal, in .gitignore
+│     └─ .env.example
 ├─ build/
-│  └─ ...
+├─ docs/
 ├─ ios/
 │  └─ Runner/
 ├─ lib/
 │  ├─ app.dart
 │  ├─ main.dart
 │  ├─ hive_registrar.g.dart
-+│  ├─ core/
+│  ├─ core/
 │  │  ├─ providers/
+│  │  │  ├─ connectivity_provider.dart
+│  │  │  ├─ notification_provider.dart
+│  │  │  ├─ quote_provider.dart
+│  │  │  ├─ reminder_time_provider.dart
+│  │  │  ├─ sync_status_provider.dart
+│  │  │  └─ theme_provider.dart
+│  │  ├─ router/
+│  │  │  └─ app_router.dart
 │  │  ├─ services/
-│  │  │  └─ device_id.dart
+│  │  │  ├─ device_id.dart
+│  │  │  ├─ notification_service.dart
+│  │  │  └─ sync_service.dart
 │  │  └─ theme/
 │  └─ features/
+│     ├─ settings/
+│        ├─ screens/
+│           └─ settings_screen.dart
 │     ├─ splash/
+│        ├─ screens/
+│        │  └─ slpash_screen.dart
+│        └─ widgets/
+│           └─ quote_widget.dart
 │     └─ task_list/
 │        ├─ models/
 │        │  ├─ habit.dart
@@ -114,9 +132,11 @@ habit_flow/
 │        │  └─ habit_hive_adapter.g.dart
 │        ├─ screens/
 │        │  └─ list_screen.dart
-│        └─ services/
-│           └─ notification_service.dart
+│        └─ widgets/
+│           ├─ empty_content.dart
+│           ├─ habit_dialog.dart
+│           └─ item_list.dart
 ├─ test/
-   └─ widget_test.dart
+  └─ widget_test.dart
 
 ```
