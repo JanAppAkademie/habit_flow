@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:habit_flow/core/models/habit.dart';
 
 class ItemList extends StatelessWidget {
   const ItemList({
@@ -8,8 +9,8 @@ class ItemList extends StatelessWidget {
     required this.onDelete,
   });
 
-  final List<String> items;
-  final void Function(int index, String newItem) onEdit;
+  final List<Habit> items;
+  final void Function(int index, Habit newItem) onEdit;
   final void Function(int index) onDelete;
 
   @override
@@ -18,7 +19,7 @@ class ItemList extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, index) {
         return ListTile(
-          title: Text(items[index]),
+          title: Text(items[index].name),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -26,7 +27,7 @@ class ItemList extends StatelessWidget {
                 icon: const Icon(Icons.edit),
                 onPressed: () {
                   TextEditingController editController = TextEditingController(
-                    text: items[index],
+                    text: items[index].name,
                   );
                   showDialog(
                     context: context,
@@ -50,7 +51,10 @@ class ItemList extends StatelessWidget {
                           TextButton(
                             child: const Text('Speichern'),
                             onPressed: () {
-                              onEdit(index, editController.text);
+                              final updatedHabit = Habit(
+                                name: editController.text,
+                              );
+                              onEdit(index, updatedHabit);
                               Navigator.of(context).pop();
                             },
                           ),
