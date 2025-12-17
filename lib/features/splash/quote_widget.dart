@@ -3,7 +3,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
-import 'quote_provider.dart';
+
+import 'package:habit_flow/core/providers/quote_provider.dart';
+
 
 class QuoteWidget extends StatefulWidget {
   const QuoteWidget({super.key});

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_flow/features/task_list/models/habit.dart';
 import 'package:habit_flow/features/task_list/models/habit_repository.dart';
 import 'package:habit_flow/features/task_list/providers/habit_provider.dart';
-import 'package:habit_flow/core/theme/theme_provider.dart';
+import 'package:habit_flow/core/providers/theme_provider.dart';
 import 'package:habit_flow/core/services/sync_status_provider.dart';
 import 'package:habit_flow/core/providers/connectivity_provider.dart';
 import 'package:habit_flow/core/router/app_router.dart';

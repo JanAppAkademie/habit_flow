@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'quote_api.dart';
+import '../../features/splash/quote_api.dart';
 
 
 final quoteProvider = FutureProvider<Quote>((ref) async {

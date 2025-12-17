@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_flow/core/router/app_router.dart';
-import 'core/theme/theme_provider.dart';
+import 'core/providers/theme_provider.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class App extends ConsumerWidget {
