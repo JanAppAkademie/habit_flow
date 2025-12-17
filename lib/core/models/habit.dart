@@ -1,3 +1,5 @@
+// core/models/habit.dart
+
 import 'package:hive_ce/hive.dart';
 
 part 'habit.g.dart';

@@ -1,3 +1,5 @@
+// lib/core/router/app_router.dart
+
 import 'package:go_router/go_router.dart';
 import 'package:habit_flow/features/splash/splash_screen.dart';
 import 'package:habit_flow/features/task_list/screens/home_screen.dart';
