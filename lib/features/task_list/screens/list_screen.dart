@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:habit_flow/features/task_list/widgets/empty_content.dart';
 import 'package:habit_flow/features/task_list/widgets/item_list.dart';
+import 'package:habit_flow/core/widgets/app_bar.dart';
 
 class ListScreen extends StatefulWidget {
   const ListScreen({super.key});
@@ -15,7 +16,8 @@ class _ListScreenState extends State<ListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Habit Flow')),
+      //appBar: AppBar(title: const Text('Habit Flow')),
+      appBar: const HabitAppBar(),
       body: _items.isEmpty
           ? const EmptyContent()
           : ItemList(
