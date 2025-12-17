@@ -70,22 +70,34 @@ class HabitRepository {
   /// Lädt alle Habits aus Supabase und synchronisiert sie mit der lokalen Hive-Datenbank
   Future<void> syncFromSupabase() async {
     final supabase = SyncService().supabase;
-    // Nur Zeilen abrufen, die zu diesem Gerät gehören (gerätbezogene Synchronisation)
-    final deviceId = await DeviceId.getOrCreate();
-    // Hybrid: Zeilen für dieses Gerät ODER vom Server angelegte Zeilen abrufen (device_id IST NULL)
-    final response = await supabase.from('habits').select().or("device_id.eq.'$deviceId',device_id.is.null");
-    for (final json in response) {
-      final remoteHabit = Habit.fromJson(Map<String, dynamic>.from(json));
-      final local = await getById(remoteHabit.id);
-      if (local == null) {
-        // Nur remote vorhanden: lokal speichern
-        await _box.put(remoteHabit.id, HabitHive.fromHabit(remoteHabit));
-      } else {
-        // Konfliktlösung: `updatedAt` entscheidet
-        if (remoteHabit.updatedAt.isAfter(local.updatedAt)) {
-          await _box.put(remoteHabit.id, HabitHive.fromHabit(remoteHabit));
+    try {
+      // Nur Zeilen abrufen, die zu diesem Gerät gehören (gerätbezogene Synchronisation)
+      final deviceId = await DeviceId.getOrCreate();
+      // Hybrid: Zeilen für dieses Gerät ODER vom Server angelegte Zeilen abrufen (device_id IST NULL)
+      final response = await supabase.from('habits').select().or("device_id.eq.'$deviceId',device_id.is.null");
+      for (final json in response) {
+        try {
+          final remoteHabit = Habit.fromJson(Map<String, dynamic>.from(json));
+          final local = await getById(remoteHabit.id);
+          if (local == null) {
+            // Nur remote vorhanden: lokal speichern
+            await _box.put(remoteHabit.id, HabitHive.fromHabit(remoteHabit));
+          } else {
+            // Konfliktlösung: `updatedAt` entscheidet
+            if (remoteHabit.updatedAt.isAfter(local.updatedAt)) {
+              await _box.put(remoteHabit.id, HabitHive.fromHabit(remoteHabit));
+            }
+          }
+        } catch (e) {
+          debugPrint('[HabitRepository] Failed to apply remote habit entry: $e');
+          // continue with next entry
         }
       }
+    } catch (e) {
+      debugPrint('[HabitRepository] syncFromSupabase failed: $e');
+      // If network is unavailable or Supabase cannot be reached, simply return
+      // and keep local data intact. A later retry will pick up pending changes.
+      return;
     }
   }
 
@@ -97,13 +109,18 @@ class HabitRepository {
         .where((h) => h.needsSync)
         .toList();
     for (final habit in dirtyHabits) {
-      final deviceId = await DeviceId.getOrCreate();
-      final payload = Map<String, dynamic>.from(habit.toJson());
-      payload['device_id'] = deviceId;
-      await supabase.from('habits').upsert([payload]);
-      // Nach erfolgreichem Upload `needsSync` zurücksetzen
-      final updated = habit.copyWith(needsSync: false);
-      await _box.put(habit.id, HabitHive.fromHabit(updated));
+      try {
+        final deviceId = await DeviceId.getOrCreate();
+        final payload = Map<String, dynamic>.from(habit.toJson());
+        payload['device_id'] = deviceId;
+        await supabase.from('habits').upsert([payload]);
+        // Nach erfolgreichem Upload `needsSync` zurücksetzen
+        final updated = habit.copyWith(needsSync: false);
+        await _box.put(habit.id, HabitHive.fromHabit(updated));
+      } catch (e) {
+        debugPrint('[HabitRepository] uploadLocalChanges: failed to upload habit ${habit.id}: $e');
+        // leave needsSync = true so it will be retried later
+      }
     }
   }
 
@@ -112,12 +129,17 @@ class HabitRepository {
     try {
       SyncService().isSynced.value = false;
     } catch (_) {}
+    var success = false;
     try {
       await uploadLocalChanges();
       await syncFromSupabase();
+      success = true;
+    } catch (e) {
+      debugPrint('[HabitRepository] fullSync failed: $e');
+      success = false;
     } finally {
       try {
-        SyncService().isSynced.value = true;
+        SyncService().isSynced.value = success;
       } catch (_) {
         debugPrint('SyncService disposed before fullSync could complete.');
       }
@@ -126,7 +148,10 @@ class HabitRepository {
 
   Future<List<Habit>> getAll() async {
     if (!_initialized) await init();
-    return _box.values.map((hive) => hive.toHabit()).toList();
+    final list = _box.values.map((hive) => hive.toHabit()).toList();
+    // Sort by creation time descending so newest items appear at the top.
+    list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
   }
 
   Future<Habit?> getById(String id) async {

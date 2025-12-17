@@ -20,6 +20,7 @@ class SyncService {
     final List<Map<String, dynamic>> _queue = [];
   final supabase = Supabase.instance.client;
   StreamSubscription? _connectivitySub;
+  bool _syncRunning = false;
 
   Future<void> init() async {
     _connectivitySub = Connectivity().onConnectivityChanged.listen((result) {
@@ -50,12 +51,19 @@ class SyncService {
   }
 
   Future<void> trySync() async {
-    if (_queue.isEmpty) {
-      isSynced.value = true;
-      debugPrint('[SyncService] No pending syncs.');
+    if (_syncRunning) {
+      debugPrint('[SyncService] trySync() called but a sync is already running; skipping');
       return;
     }
-    debugPrint('[SyncService] Starting sync for ${_queue.length} entries...');
+
+    _syncRunning = true;
+    try {
+      if (_queue.isEmpty) {
+        isSynced.value = true;
+        debugPrint('[SyncService] No pending syncs.');
+        return;
+      }
+      debugPrint('[SyncService] Starting sync for ${_queue.length} entries...');
     final toRemove = <Map<String, dynamic>>[];
     for (final entry in _queue) {
       final habitJson = entry['habit'] as Map<String, dynamic>;
@@ -76,6 +84,9 @@ class SyncService {
     _queue.removeWhere((entry) => toRemove.contains(entry));
     isSynced.value = _queue.isEmpty;
     debugPrint('[SyncService] Sync finished. Remaining: ${_queue.length}');
+    } finally {
+      _syncRunning = false;
+    }
   }
   // Getter für Queue-Länge
   int get queueLength => _queue.length;

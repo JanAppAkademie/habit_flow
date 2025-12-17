@@ -44,7 +44,7 @@
     "synced": "Synchronisiert",
     "syncing": "Synchronisiere...",
     "finished": "Synchronisation abgeschlossen",
-    "error": "Sync-Fehler: {error}"
+    "error": "Sync-Fehler: Bitte stelle zunächst eine Internetverbingung her"
   }
   ,
   "splash": {

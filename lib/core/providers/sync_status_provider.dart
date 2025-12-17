@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:habit_flow/core/services/sync_service.dart';
 
 class SyncStatusNotifier extends Notifier<bool> {
@@ -6,7 +8,9 @@ class SyncStatusNotifier extends Notifier<bool> {
   bool build() {
     // Initialwert setzen
     _listen();
-    return SyncService().isSynced.value;
+    final v = SyncService().isSynced.value;
+    debugPrint('[sync_status_provider] build -> isSynced=$v');
+    return v;
   }
 
   void _listen() {
@@ -15,7 +19,9 @@ class SyncStatusNotifier extends Notifier<bool> {
   }
 
   void _update() {
-    state = SyncService().isSynced.value;
+    final v = SyncService().isSynced.value;
+    debugPrint('[sync_status_provider] _update -> isSynced=$v');
+    state = v;
   }
 
   void dispose() {

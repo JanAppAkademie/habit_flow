@@ -7,7 +7,8 @@ import 'package:habit_flow/core/providers/habit_provider.dart';
 import 'package:habit_flow/core/providers/theme_provider.dart';
 import 'package:habit_flow/core/providers/sync_status_provider.dart';
 import 'package:habit_flow/core/providers/connectivity_provider.dart';
-import 'package:habit_flow/core/providers/sticky_offline_provider.dart';
+import 'package:habit_flow/core/services/sync_service.dart';
+// sticky offline state handled locally in this screen to avoid provider circularity
 import 'package:habit_flow/core/router/app_router.dart';
 import 'package:go_router/go_router.dart';
 import 'package:habit_flow/features/task_list/widgets/empty_content.dart';
@@ -15,12 +16,88 @@ import 'package:habit_flow/features/task_list/widgets/habit_dialog.dart';
 import 'package:habit_flow/features/task_list/widgets/motivation_banner.dart';
 
 
-class ListScreen extends ConsumerWidget {
+class ListScreen extends ConsumerStatefulWidget {
   const ListScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ListScreen> createState() => _ListScreenState();
+}
+
+class _ListScreenState extends ConsumerState<ListScreen> {
+  bool _stickyOffline = false;
+  late final ScrollController _scrollController = ScrollController();
+
+  // We must register Riverpod listeners inside `build()` for ConsumerState.
+  // Use [_listenersAttached] to ensure we only register them once.
+  bool _listenersAttached = false;
+
+  @override
+  Widget build(BuildContext context) {
+    // Attach listeners from inside build to satisfy Riverpod's debug checks.
+    if (!_listenersAttached) {
+      _listenersAttached = true;
+      debugPrint('[ListScreen] Attaching connectivity and sync listeners');
+
+      ref.listen<AsyncValue<bool>>(connectivityProvider, (previous, next) {
+        next.when(
+          data: (online) async {
+            debugPrint('[ListScreen] connectivity changed -> online: $online');
+            if (!online) {
+              if (!_stickyOffline) {
+                debugPrint('[ListScreen] went offline — setting sticky');
+                setState(() => _stickyOffline = true);
+              }
+            } else {
+              // Went back online: proactively trigger a sync and clear sticky if sync completes.
+              debugPrint('[ListScreen] back online — attempting trySync()');
+              try {
+                await SyncService().trySync();
+                debugPrint('[ListScreen] trySync() finished; isSynced=${SyncService().isSynced.value}');
+                if (SyncService().isSynced.value && _stickyOffline) {
+                  debugPrint('[ListScreen] sync succeeded — clearing sticky');
+                  setState(() => _stickyOffline = false);
+                }
+              } catch (e) {
+                debugPrint('[ListScreen] trySync() failed: $e');
+                // If trySync fails, leave sticky; syncStatusProvider listener may clear it later.
+              }
+            }
+          },
+          loading: () {},
+          error: (_, __) {},
+        );
+      });
+
+      ref.listen<bool>(syncStatusProvider, (previous, next) {
+        debugPrint('[ListScreen] syncStatusProvider changed -> $previous -> $next');
+        if (next == true && _stickyOffline) {
+          debugPrint('[ListScreen] syncStatusProvider reports synced — clearing sticky');
+          setState(() => _stickyOffline = false);
+        }
+      });
+      // After attaching listeners, schedule a post-frame check to clear sticky
+      // if the service is already synced or there's nothing in the queue.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
+          final serviceSynced = SyncService().isSynced.value;
+          final queueEmpty = SyncService().queueLength == 0;
+          debugPrint('[ListScreen] Post-frame sync check: isSynced=$serviceSynced queueEmpty=$queueEmpty _stickyOffline=$_stickyOffline');
+          if ((serviceSynced || queueEmpty) && _stickyOffline) {
+            debugPrint('[ListScreen] Clearing sticky from post-frame check');
+            setState(() => _stickyOffline = false);
+          }
+        } catch (e) {
+          debugPrint('[ListScreen] Post-frame sync check failed: $e');
+        }
+      });
+    }
     final repository = getHabitRepository();
+
+    // Log build-time state to help debug missing events
+    final syncedDbg = ref.watch(syncStatusProvider);
+    final onlineAsyncDbg = ref.watch(connectivityProvider);
+    final onlineDbg = onlineAsyncDbg.when(data: (v) => v, loading: () => true, error: (_,__) => false);
+    debugPrint('[ListScreen.build] synced=$syncedDbg online=$onlineDbg _stickyOffline=$_stickyOffline');
 
     return ref.watch(habitProvider).when(
       data: (habits) {
@@ -31,7 +108,6 @@ class ListScreen extends ConsumerWidget {
         final synced = ref.watch(syncStatusProvider);
         final onlineAsync = ref.watch(connectivityProvider);
         final online = onlineAsync.when(data: (v) => v, loading: () => true, error: (_,__) => false);
-        final sticky = ref.watch(stickyOfflineProvider);
 
         return Scaffold(
           appBar: AppBar(
@@ -43,9 +119,9 @@ class ListScreen extends ConsumerWidget {
                   icon: Icon(
                     // Show cloud icon when synced, show sync icon while an active sync is running
                     synced ? Icons.cloud_done : Icons.sync,
-                    color: sticky
-                        ? Colors.red
-                        : (!online ? Colors.redAccent : (synced ? Colors.green : Theme.of(context).colorScheme.onSurface)),
+                    color: _stickyOffline
+                      ? Colors.red
+                      : (!online ? Colors.redAccent : (synced ? Colors.green : Theme.of(context).colorScheme.onSurface)),
                     size: 26,
                   ),
                 onPressed: () async {
@@ -89,8 +165,19 @@ class ListScreen extends ConsumerWidget {
                   ).then((result) async {
                     if (result is Habit) {
                       await repository.add(result);
-                      // ignore: unawaited_futures, unused_result
+                      // refresh provider to reload local data
+                      // ignore: unused_result
                       ref.refresh(habitProvider);
+                      // Scroll to top so the newly created item (newest) is visible
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (_scrollController.hasClients) {
+                          _scrollController.animateTo(
+                            0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
+                        }
+                      });
                     }
                   });
                 },
@@ -142,7 +229,8 @@ class ListScreen extends ConsumerWidget {
                     } catch (e) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('sync.error'.tr(namedArgs: {'error': e.toString()})), backgroundColor: Colors.red),
+                          SnackBar(content: Text('sync.error'.tr()), backgroundColor: Colors.red),
+                          //SnackBar(content: Text('sync.error'.tr(namedArgs: {'error': e.toString()})), backgroundColor: Colors.red),
                         );
                       }
                     }
@@ -156,6 +244,7 @@ class ListScreen extends ConsumerWidget {
                           ),
                         )
                         : ListView.builder(
+                          controller: _scrollController,
                           itemCount: habits.length,
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                           itemBuilder: (context, index) {
@@ -296,6 +385,12 @@ class ListScreen extends ConsumerWidget {
         );
       },
     );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }
 
