@@ -28,7 +28,7 @@ class ListScreen extends ConsumerWidget {
         final completedCount = habits.where((h) => h.completedToday).length;
         final totalCount = habits.length;
 
-        final _ = ref.watch(themeControllerProvider);
+        final _ = ref.watch(themeModeProvider);
         final synced = ref.watch(syncStatusProvider);
         final onlineAsync = ref.watch(connectivityProvider);
         final online = onlineAsync.when(data: (v) => v, loading: () => true, error: (_,__) => false);

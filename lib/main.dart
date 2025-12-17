@@ -5,8 +5,6 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:habit_flow/app.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:habit_flow/core/providers/theme_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:habit_flow/features/task_list/services/notification_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 
@@ -61,24 +59,19 @@ void main() async {
   // Automatischer Sync beim App-Start
   await getHabitRepository().fullSync();
 
-  // Load persisted theme and override the theme controller provider
-  final prefs = await SharedPreferences.getInstance();
-  final stored = prefs.getString('theme_mode');
-  final initialTheme =
-      stored == 'light' ? ThemeMode.light :
-      stored == 'dark' ? ThemeMode.dark :
-      ThemeMode.system;
+    // Initialize Notification Service
+    await NotificationService.initialize();
 
-  // Set initial value for the global ValueNotifier
-  themeModeNotifier.value = initialTheme;
-  // Initialize Notification Service
-  await NotificationService.initialize();
-  runApp(
-    EasyLocalization(
-      supportedLocales: const [Locale('de')],
-      path: 'assets/langs',
-      fallbackLocale: const Locale('de'),
-      child: const ProviderScope(child: App()),
-    ),
-  );
+    // Note: older Riverpod versions don't accept a `container` named
+    // parameter on `ProviderScope`. Instead, the ThemeController loads
+    // its persisted value asynchronously on build. This avoids an
+    // unsupported named parameter error during analysis.
+    runApp(
+      EasyLocalization(
+        supportedLocales: const [Locale('de')],
+        path: 'assets/langs',
+        fallbackLocale: const Locale('de'),
+        child: const ProviderScope(child: App()),
+      ),
+    );
 }

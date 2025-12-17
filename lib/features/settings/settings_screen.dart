@@ -5,14 +5,13 @@ import 'package:habit_flow/features/task_list/providers/notification_provider.da
 import 'package:habit_flow/features/task_list/providers/reminder_time_provider.dart';
 import 'package:habit_flow/features/task_list/services/notification_service.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeNotifier = ref.watch(themeControllerProvider);
+    final themeMode = ref.watch(themeModeProvider);
     final _ = ref.watch(notificationControllerProvider);
     final reminderTime = ref.watch(reminderTimeControllerProvider);
 
@@ -29,29 +28,20 @@ class SettingsScreen extends ConsumerWidget {
             child: Text('settings.appearance'.tr(), style: Theme.of(context).textTheme.titleMedium),
           ),
           const SizedBox(height: 8),
-          ValueListenableBuilder<ThemeMode>(
-            valueListenable: themeNotifier,
-            builder: (context, mode, _) {
-              // Use SegmentedButton as a non-deprecated alternative to RadioListTile
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: SegmentedButton<ThemeMode>(
-                  segments: <ButtonSegment<ThemeMode>>[
-                    ButtonSegment(value: ThemeMode.system, label: Text('settings.system'.tr())),
-                    ButtonSegment(value: ThemeMode.dark, label: Text('settings.dark'.tr())),
-                    ButtonSegment(value: ThemeMode.light, label: Text('settings.light'.tr())),
-                  ],
-                  selected: <ThemeMode>{mode},
-                  onSelectionChanged: (newSelection) async {
-                    final selected = newSelection.isNotEmpty ? newSelection.first : ThemeMode.system;
-                    final prefs = await SharedPreferences.getInstance();
-                    final key = selected == ThemeMode.dark ? 'dark' : selected == ThemeMode.light ? 'light' : 'system';
-                    await prefs.setString('theme_mode', key);
-                    themeNotifier.value = selected;
-                  },
-                ),
-              );
-            },
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SegmentedButton<ThemeMode>(
+              segments: <ButtonSegment<ThemeMode>>[
+                ButtonSegment(value: ThemeMode.system, label: Text('settings.system'.tr())),
+                ButtonSegment(value: ThemeMode.dark, label: Text('settings.dark'.tr())),
+                ButtonSegment(value: ThemeMode.light, label: Text('settings.light'.tr())),
+              ],
+              selected: <ThemeMode>{themeMode},
+              onSelectionChanged: (newSelection) async {
+                final selected = newSelection.isNotEmpty ? newSelection.first : ThemeMode.system;
+                await ref.read(themeModeProvider.notifier).setTheme(selected);
+              },
+            ),
           ),
 
           const Divider(),

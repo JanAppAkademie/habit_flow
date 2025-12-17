@@ -9,30 +9,25 @@ class App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeNotifier = ref.watch(themeControllerProvider);
+    final themeMode = ref.watch(themeModeProvider);
     return EasyLocalization(
       supportedLocales: const [Locale('de')],
       path: 'assets/langs',
       fallbackLocale: const Locale('de'),
-      child: ValueListenableBuilder<ThemeMode>(
-        valueListenable: themeNotifier,
-        builder: (context, themeMode, _) {
-          return MaterialApp.router(
-            debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              brightness: Brightness.light,
-            ),
-            darkTheme: ThemeData(
-              brightness: Brightness.dark,
-            ),
-            themeMode: themeMode,
-            title: tr('habit_flow'),
-            routerConfig: appRouter,
-            locale: context.locale,
-            localizationsDelegates: context.localizationDelegates,
-            supportedLocales: context.supportedLocales,
-          );
-        },
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          brightness: Brightness.light,
+        ),
+        darkTheme: ThemeData(
+          brightness: Brightness.dark,
+        ),
+        themeMode: themeMode,
+        title: tr('habit_flow'),
+        routerConfig: appRouter,
+        locale: context.locale,
+        localizationsDelegates: context.localizationDelegates,
+        supportedLocales: context.supportedLocales,
       ),
     );
   }
