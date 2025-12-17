@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// ThemeController implemented as a Riverpod Notifier.
+/// ThemeController implementiert als Riverpod-Notifier.
 ///
-/// - `build()` returns the default ThemeMode and triggers an async
-///   load of the persisted preference.
-/// - `setTheme()` updates state and persists the selection.
+/// - `build()` gibt den Standard-`ThemeMode` zurück und startet asynchron
+///   das Laden der persistierten Einstellung.
+/// - `setTheme()` aktualisiert den Zustand und speichert die Auswahl persistent.
 class ThemeModeProvider extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
-    // Start with system as a safe default; then load persisted value.
+    // Starte mit `system` als sichere Standardeinstellung; lade anschließend den gespeicherten Wert.
     _loadPersisted();
     return ThemeMode.system;
   }
@@ -27,7 +27,7 @@ class ThemeModeProvider extends Notifier<ThemeMode> {
         state = ThemeMode.system;
       }
     } catch (_) {
-      // Ignore and keep default
+      // Fehler beim Laden ignorieren und Standardwert beibehalten
     }
   }
 
@@ -38,7 +38,7 @@ class ThemeModeProvider extends Notifier<ThemeMode> {
       final key = mode == ThemeMode.dark ? 'dark' : mode == ThemeMode.light ? 'light' : 'system';
       await prefs.setString('theme_mode', key);
     } catch (_) {
-      // ignore persistence errors
+      debugPrint('Fehler beim Speichern des ThemeMode');
     }
   }
 }

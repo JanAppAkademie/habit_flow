@@ -19,11 +19,10 @@ class ListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final habitsAsync = ref.watch(habitProvider);
     final repository = getHabitRepository();
     
 
-    return habitsAsync.when(
+    return ref.watch(habitProvider).when(
       data: (habits) {
         final completedCount = habits.where((h) => h.completedToday).length;
         final totalCount = habits.length;

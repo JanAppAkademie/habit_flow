@@ -14,8 +14,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
 
-  // Load environment variables from .env (not committed)
-  // Try loading .env content from assets/supabase/.env (project root relative)
+  // Lade Umgebungsvariablen aus .env (nicht im Repository gespeichert)
+  // Versuche, den Inhalt von assets/supabase/.env zu laden (relativ zum Projekt-Root)
+  // Nicht die beste Idee, aber ich bin sensiblisiert gegenüber dem Umgang mit Secrets in Flutter-Projekten.
   Map<String, String> envFromAsset = {};
   try {
     final content = await rootBundle.loadString('assets/supabase/.env');
@@ -30,18 +31,18 @@ void main() async {
       envFromAsset[key] = value;
     }
   } catch (e) {
-    // File not found or not bundled as asset; fall back to --dart-define below.
+    // Datei nicht gefunden oder nicht als Asset gebündelt; Fallback auf --dart-define weiter unten.
     // ignore: avoid_print
     print('No assets/supabase/.env asset found — falling back to --dart-define if provided.');
   }
 
-  // Initialize Hive
+  // Initialisiere Hive
   await Hive.initFlutter();
 
-  // Initialize Supabase with environment variables
-  // Allow two ways to provide secrets:
-  // 1) Local development: .env file loaded by flutter_dotenv
-  // 2) CI / build-time: passed via --dart-define (String.fromEnvironment)
+  // Initialisiere Supabase mit Umgebungsvariablen
+  // Erlaubt zwei Methoden, Secrets bereitzustellen:
+  // 1) Lokale Entwicklung: .env-Datei (z. B. geladen durch flutter_dotenv)
+  // 2) CI / Build-Zeit: per --dart-define übergeben (String.fromEnvironment)
   final supabaseUrl = envFromAsset['SUPABASE_URL'] ?? const String.fromEnvironment('SUPABASE_URL');
   final supabaseAnonKey = envFromAsset['SUPABASE_ANON_KEY'] ?? const String.fromEnvironment('SUPABASE_ANON_KEY');
 
@@ -54,7 +55,7 @@ void main() async {
     anonKey: supabaseAnonKey,
   );
 
-  // Initialize repository
+  // Initialisiere Repository
   await initializeHabitRepository();
   // Automatischer Sync beim App-Start
   await getHabitRepository().fullSync();
@@ -62,10 +63,10 @@ void main() async {
     // Initialize Notification Service
     await NotificationService.initialize();
 
-    // Note: older Riverpod versions don't accept a `container` named
-    // parameter on `ProviderScope`. Instead, the ThemeController loads
-    // its persisted value asynchronously on build. This avoids an
-    // unsupported named parameter error during analysis.
+    // Hinweis: Ältere Riverpod-Versionen akzeptieren keinen benannten
+    // Parameter `container` für `ProviderScope`. Stattdessen lädt der
+    // ThemeController seinen gespeicherten Wert asynchron in `build()`.
+    // Dadurch tritt kein Fehler wegen eines nicht unterstützten benannten Parameters in der Analyse auf.
     runApp(
       EasyLocalization(
         supportedLocales: const [Locale('de')],

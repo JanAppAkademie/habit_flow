@@ -4,7 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class DeviceId {
   static const _key = 'device_id';
 
-  /// Returns existing device id or creates & persists a new UUID v4.
+  /// Gibt die vorhandene Geräte-ID zurück oder erstellt und speichert
+  /// eine neue UUID v4.
   static Future<String> getOrCreate() async {
     final prefs = await SharedPreferences.getInstance();
     final existing = prefs.getString(_key);
@@ -15,13 +16,13 @@ class DeviceId {
     return id;
   }
 
-  /// Remove stored device id (for testing)
+  /// Entfernt die gespeicherte Geräte-ID (für Tests)
   static Future<void> reset() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key);
   }
 
-  // Simple UUID v4 generator (no external package) — not cryptographically secure
+  // Einfache UUID-v4-Erzeugung (ohne externes Paket) — nicht kryptografisch sicher
   static String _generateUuidV4() {
     final rnd = Random.secure();
     final bytes = List<int>.generate(16, (_) => rnd.nextInt(256));

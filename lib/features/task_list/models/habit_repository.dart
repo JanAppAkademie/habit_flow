@@ -1,4 +1,5 @@
 
+import 'package:flutter/material.dart';
 import 'package:hive_ce/hive.dart';
 import 'habit.dart';
 import 'habit_hive_adapter.dart';
@@ -17,7 +18,7 @@ class HabitRepository {
     if (_initialized) return;
     Hive.registerAdapter(HabitHiveAdapter());
     _box = await Hive.openBox<HabitHive>(_boxName);
-    // Normalize existing entries: rewrite entries using current adapter/format
+    // Normalisiere bestehende Einträge: Schreibe Einträge mit dem aktuellen Adapter/Format neu
     try {
       for (final key in _box.keys.toList()) {
         try {
@@ -27,7 +28,7 @@ class HabitRepository {
           final rewritten = HabitHive.fromHabit(habit);
           await _box.put(hive.id, rewritten);
         } catch (e) {
-          // If one entry is corrupt/unreadable, remove it to avoid crashing.
+          // Wenn ein Eintrag korrupt oder nicht lesbar ist, entferne ihn, um Abstürze zu vermeiden.
           await _box.delete(key);
         }
       }
@@ -69,9 +70,9 @@ class HabitRepository {
   /// Lädt alle Habits aus Supabase und synchronisiert sie mit der lokalen Hive-Datenbank
   Future<void> syncFromSupabase() async {
     final supabase = SyncService().supabase;
-    // Only pull rows that belong to this device (device-scoped sync)
+    // Nur Zeilen abrufen, die zu diesem Gerät gehören (gerätbezogene Synchronisation)
     final deviceId = await DeviceId.getOrCreate();
-    // Hybrid: pull rows for this device OR server-seeded rows (device_id IS NULL)
+    // Hybrid: Zeilen für dieses Gerät ODER vom Server angelegte Zeilen abrufen (device_id IST NULL)
     final response = await supabase.from('habits').select().or("device_id.eq.'$deviceId',device_id.is.null");
     for (final json in response) {
       final remoteHabit = Habit.fromJson(Map<String, dynamic>.from(json));
@@ -80,7 +81,7 @@ class HabitRepository {
         // Nur remote vorhanden: lokal speichern
         await _box.put(remoteHabit.id, HabitHive.fromHabit(remoteHabit));
       } else {
-        // Konfliktlösung: updatedAt entscheidet
+        // Konfliktlösung: `updatedAt` entscheidet
         if (remoteHabit.updatedAt.isAfter(local.updatedAt)) {
           await _box.put(remoteHabit.id, HabitHive.fromHabit(remoteHabit));
         }
@@ -88,7 +89,7 @@ class HabitRepository {
     }
   }
 
-  /// Lädt alle lokalen Habits, die needsSync=true, zu Supabase hoch
+  /// Lädt alle lokalen Habits, die `needsSync=true` haben, zu Supabase hoch
   Future<void> uploadLocalChanges() async {
     final supabase = SyncService().supabase;
     final dirtyHabits = _box.values
@@ -100,15 +101,14 @@ class HabitRepository {
       final payload = Map<String, dynamic>.from(habit.toJson());
       payload['device_id'] = deviceId;
       await supabase.from('habits').upsert([payload]);
-      // Nach erfolgreichem Upload needsSync zurücksetzen
+      // Nach erfolgreichem Upload `needsSync` zurücksetzen
       final updated = habit.copyWith(needsSync: false);
       await _box.put(habit.id, HabitHive.fromHabit(updated));
     }
   }
 
-  /// Führt einen vollständigen Sync durch (bidirektional)
   Future<void> fullSync() async {
-    // Mark sync as in-progress so UI can show syncing state
+    // Markiere Sync als in Arbeit, damit die UI einen Sync-Zustand anzeigen kann
     try {
       SyncService().isSynced.value = false;
     } catch (_) {}
@@ -118,7 +118,9 @@ class HabitRepository {
     } finally {
       try {
         SyncService().isSynced.value = true;
-      } catch (_) {}
+      } catch (_) {
+        debugPrint('SyncService disposed before fullSync could complete.');
+      }
     }
   }
 
@@ -169,7 +171,7 @@ class HabitRepository {
   }
 }
 
-// Global instance
+// Globale Instanz
 late final HabitRepository _habitRepository;
 
 Future<void> initializeHabitRepository() async {

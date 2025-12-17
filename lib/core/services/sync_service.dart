@@ -23,9 +23,7 @@ class SyncService {
 
   Future<void> init() async {
     _connectivitySub = Connectivity().onConnectivityChanged.listen((result) {
-      // `onConnectivityChanged` delivers a single ConnectivityResult.
-      // Older code attempted to treat it like a list (calling `.any(...)`).
-      // Check the single enum value instead.
+      // `onConnectivityChanged` liefert ein einzelnes `ConnectivityResult`.
       if (result.any((status) => status != ConnectivityResult.none)) {
         trySync();
       }
@@ -38,7 +36,7 @@ class SyncService {
   }
 
   Future<void> addToQueue(Habit habit, String action) async {
-    // action: 'insert', 'update', 'delete'
+    // Aktion: 'insert', 'update', 'delete'
     // Ersetze ggf. vorhandene Einträge mit gleicher ID
     _queue.removeWhere((entry) => entry['habit']['id'] == habit.id);
     final deviceId = await DeviceId.getOrCreate();
@@ -54,16 +52,16 @@ class SyncService {
   Future<void> trySync() async {
     if (_queue.isEmpty) {
       isSynced.value = true;
-      debugPrint('[SyncService] Keine ausstehenden Syncs.');
+      debugPrint('[SyncService] No pending syncs.');
       return;
     }
-    debugPrint('[SyncService] Starte Sync für ${_queue.length} Einträge...');
+    debugPrint('[SyncService] Starting sync for ${_queue.length} entries...');
     final toRemove = <Map<String, dynamic>>[];
     for (final entry in _queue) {
       final habitJson = entry['habit'] as Map<String, dynamic>;
       final action = entry['action'] as String;
       try {
-        debugPrint('[SyncService] Sync: $action für Habit ${habitJson['id']}');
+        debugPrint('[SyncService] Sync: $action for Habit ${habitJson['id']}');
         if (action == 'delete') {
           await supabase.from('habits').delete().eq('id', habitJson['id']);
         } else {
@@ -71,13 +69,13 @@ class SyncService {
         }
         toRemove.add(entry);
       } catch (e) {
-        debugPrint('[SyncService] Fehler beim Sync von ${habitJson['id']}: $e');
-        // Fehler beim Sync, später erneut versuchen
+        debugPrint('[SyncService] Error syncing ${habitJson['id']}: $e');
+        // Fehlerbehandlung: Behalte den Eintrag in der Queue für einen späteren Versuch
       }
     }
     _queue.removeWhere((entry) => toRemove.contains(entry));
     isSynced.value = _queue.isEmpty;
-    debugPrint('[SyncService] Sync abgeschlossen. Noch ausstehend: ${_queue.length}');
+    debugPrint('[SyncService] Sync finished. Remaining: ${_queue.length}');
   }
   // Getter für Queue-Länge
   int get queueLength => _queue.length;

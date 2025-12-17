@@ -5,6 +5,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
+import 'package:easy_localization/easy_localization.dart';
 
 // Muss top-level sein für flutter_local_notifications
 @pragma('vm:entry-point')
@@ -18,8 +19,8 @@ class NotificationService {
   static Future<void> showInstantNotification() async {
     await _notifications.show(
       9999, // ID für Sofort-Notification
-      'HabitFlow Sofort-Test',
-      'Das ist eine sofortige Test-Benachrichtigung!',
+      'notifications.instant_title'.tr(),
+      'notifications.instant_body'.tr(),
       const NotificationDetails(
         android: AndroidNotificationDetails('habitflow_channel', 'Erinnerungen', importance: Importance.max, priority: Priority.high),
         iOS: DarwinNotificationDetails(),
@@ -71,8 +72,8 @@ class NotificationService {
     debugPrint('[NotificationService] (LOCAL) Scheduling daily notification for ${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')} (${tzTime.toString()})');
     await _notifications.zonedSchedule(
       0,
-      'HabitFlow Erinnerung',
-      'Nicht vergessen, deine Gewohnheiten zu checken!',
+      'notifications.reminder_title'.tr(),
+      'notifications.reminder_body'.tr(),
       tzTime,
       const NotificationDetails(
         android: AndroidNotificationDetails('habitflow_channel', 'Erinnerungen', importance: Importance.max, priority: Priority.high),

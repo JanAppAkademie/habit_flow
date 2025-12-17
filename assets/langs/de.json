@@ -32,7 +32,12 @@
     "active": "Aktiv",
     "inactive": "Inaktiv",
     "reminder_time": "Erinnerungszeit",
-    "not_set": "Nicht gesetzt"
+    "not_set": "Nicht gesetzt",
+    "instant_title": "HabitFlow Sofort-Test",
+    "instant_body": "Das ist eine sofortige Test-Benachrichtigung!",
+    "reminder_title": "HabitFlow Erinnerung",
+    "reminder_body": "Nicht vergessen, deine Gewohnheiten zu checken!",
+    "channel_name": "Erinnerungen"
   },
 
   "sync": {
@@ -45,6 +50,26 @@
   "splash": {
     "welcome": "Willkommen zu Habit Flow",
     "quote_error": "Fehler beim Laden des Zitats"
+  },
+  "habit_dialog": {
+    "new": "Neue Gewohnheit",
+    "edit": "Gewohnheit bearbeiten",
+    "name": "Name",
+    "name_hint": "z.B. Meditation",
+    "description": "Beschreibung",
+    "description_hint": "z.B. 10 Minuten Morgen-Meditation",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "name_required": "Bitte geben Sie einen Namen ein"
+}
+
+  ,
+  "tasks": {
+    "edit_title": "Task bearbeiten",
+    "edit_hint": "Task bearbeiten"
+  },
+  "action": {
+    "save": "Speichern"
   }
 }
 

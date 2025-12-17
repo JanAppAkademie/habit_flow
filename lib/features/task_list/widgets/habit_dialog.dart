@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:habit_flow/features/task_list/models/habit.dart';
 
 class HabitDialog extends ConsumerStatefulWidget {
@@ -36,24 +37,24 @@ class _HabitDialogState extends ConsumerState<HabitDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.habit == null ? 'Neue Gewohnheit' : 'Gewohnheit bearbeiten'),
+      title: Text(widget.habit == null ? 'habit_dialog.new'.tr() : 'habit_dialog.edit'.tr()),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'z.B. Meditation',
+              decoration: InputDecoration(
+                labelText: 'habit_dialog.name'.tr(),
+                hintText: 'habit_dialog.name_hint'.tr(),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Beschreibung',
-                hintText: 'z.B. 10 Minuten Morgen-Meditation',
+              decoration: InputDecoration(
+                labelText: 'habit_dialog.description'.tr(),
+                hintText: 'habit_dialog.description_hint'.tr(),
               ),
               maxLines: 3,
             ),
@@ -63,13 +64,13 @@ class _HabitDialogState extends ConsumerState<HabitDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Abbrechen'),
+          child: Text('habit_dialog.cancel'.tr()),
         ),
         ElevatedButton(
           onPressed: () {
             if (_nameController.text.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Bitte geben Sie einen Namen ein')),
+                SnackBar(content: Text('habit_dialog.name_required'.tr())),
               );
               return;
             }
@@ -95,7 +96,7 @@ class _HabitDialogState extends ConsumerState<HabitDialog> {
 
             Navigator.pop(context, habit);
           },
-          child: const Text('Speichern'),
+          child: Text('habit_dialog.save'.tr()),
         ),
       ],
     );
