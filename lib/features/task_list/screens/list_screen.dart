@@ -8,8 +8,6 @@ import 'package:habit_flow/core/providers/theme_provider.dart';
 import 'package:habit_flow/core/providers/sync_status_provider.dart';
 import 'package:habit_flow/core/providers/connectivity_provider.dart';
 import 'package:habit_flow/core/services/sync_service.dart';
-import 'package:habit_flow/core/providers/ui_providers.dart';
-// sticky offline state handled locally in this screen to avoid provider circularity
 import 'package:habit_flow/core/router/app_router.dart';
 import 'package:go_router/go_router.dart';
 import 'package:habit_flow/features/task_list/widgets/empty_content.dart';
@@ -43,26 +41,16 @@ class _ListScreenState extends ConsumerState<ListScreen> {
           data: (online) async {
             debugPrint('[ListScreen] connectivity changed -> online: $online');
             if (!online) {
-              final current = ref.read(stickyOfflineProvider);
-              if (!current) {
-                debugPrint('[ListScreen] went offline — setting sticky');
-                ref.read(stickyOfflineProvider.notifier).setTrue();
-              }
-            } else {
-              // Went back online: proactively trigger a sync and clear sticky if sync completes.
-              debugPrint('[ListScreen] back online — attempting trySync()');
-              try {
-                await SyncService().trySync();
-                debugPrint('[ListScreen] trySync() finished; isSynced=${SyncService().isSynced.value}');
-                final current = ref.read(stickyOfflineProvider);
-                if (SyncService().isSynced.value && current) {
-                  debugPrint('[ListScreen] sync succeeded — clearing sticky');
-                  ref.read(stickyOfflineProvider.notifier).setFalse();
-                }
-              } catch (e) {
-                debugPrint('[ListScreen] trySync() failed: $e');
-                // If trySync fails, leave sticky; syncStatusProvider listener may clear it later.
-              }
+              // No sticky handling — UI will reflect connectivity via color only.
+              return;
+            }
+            // Went back online: proactively trigger a sync.
+            debugPrint('[ListScreen] back online — attempting trySync()');
+            try {
+              await SyncService().trySync();
+              debugPrint('[ListScreen] trySync() finished; isSynced=${SyncService().isSynced.value}');
+            } catch (e) {
+              debugPrint('[ListScreen] trySync() failed: $e');
             }
           },
           loading: () {},
@@ -72,27 +60,6 @@ class _ListScreenState extends ConsumerState<ListScreen> {
 
       ref.listen<bool>(syncStatusProvider, (previous, next) {
         debugPrint('[ListScreen] syncStatusProvider changed -> $previous -> $next');
-        final current = ref.read(stickyOfflineProvider);
-        if (next == true && current) {
-          debugPrint('[ListScreen] syncStatusProvider reports synced — clearing sticky');
-          ref.read(stickyOfflineProvider.notifier).setFalse();
-        }
-      });
-      // After attaching listeners, schedule a post-frame check to clear sticky
-      // if the service is already synced or there's nothing in the queue.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        try {
-          final serviceSynced = SyncService().isSynced.value;
-          final queueEmpty = SyncService().queueLength == 0;
-          final current = ref.read(stickyOfflineProvider);
-          debugPrint('[ListScreen] Post-frame sync check: isSynced=$serviceSynced queueEmpty=$queueEmpty _stickyOffline=$current');
-          if ((serviceSynced || queueEmpty) && current) {
-            debugPrint('[ListScreen] Clearing sticky from post-frame check');
-            ref.read(stickyOfflineProvider.notifier).setFalse();
-          }
-        } catch (e) {
-          debugPrint('[ListScreen] Post-frame sync check failed: $e');
-        }
       });
     }
     final repository = getHabitRepository();
@@ -101,8 +68,7 @@ class _ListScreenState extends ConsumerState<ListScreen> {
     final syncedDbg = ref.watch(syncStatusProvider);
     final onlineAsyncDbg = ref.watch(connectivityProvider);
     final onlineDbg = onlineAsyncDbg.when(data: (v) => v, loading: () => true, error: (_,__) => false);
-    final stickyDbg = ref.watch(stickyOfflineProvider);
-    debugPrint('[ListScreen.build] synced=$syncedDbg online=$onlineDbg _stickyOffline=$stickyDbg');
+    debugPrint('[ListScreen.build] synced=$syncedDbg online=$onlineDbg');
 
     return ref.watch(habitProvider).when(
       data: (habits) {
@@ -113,7 +79,6 @@ class _ListScreenState extends ConsumerState<ListScreen> {
         final synced = ref.watch(syncStatusProvider);
         final onlineAsync = ref.watch(connectivityProvider);
         final online = onlineAsync.when(data: (v) => v, loading: () => true, error: (_,__) => false);
-        final sticky = ref.watch(stickyOfflineProvider);
 
         return Scaffold(
           appBar: AppBar(
@@ -125,9 +90,7 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                   icon: Icon(
                     // Show cloud icon when synced, show sync icon while an active sync is running
                     synced ? Icons.cloud_done : Icons.sync,
-                    color: sticky
-                      ? Colors.red
-                      : (!online ? Colors.redAccent : (synced ? Colors.green : Theme.of(context).colorScheme.onSurface)),
+                    color: (!online ? Colors.redAccent : (synced ? Colors.green : Theme.of(context).colorScheme.onSurface)),
                     size: 26,
                   ),
                 onPressed: () async {
