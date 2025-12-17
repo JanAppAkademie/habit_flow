@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class ItemList extends StatelessWidget {
   const ItemList({
@@ -32,23 +33,23 @@ class ItemList extends StatelessWidget {
                     context: context,
                     builder: (context) {
                       return AlertDialog(
-                        title: const Text('Task bearbeiten'),
+                        title: Text('tasks.edit_title'.tr()),
                         content: TextField(
                           autofocus: true,
                           controller: editController,
-                          decoration: const InputDecoration(
-                            hintText: "Task bearbeiten",
+                          decoration: InputDecoration(
+                            hintText: 'tasks.edit_hint'.tr(),
                           ),
                         ),
                         actions: [
                           TextButton(
-                            child: const Text('Abbrechen'),
+                            child: Text('cancel'.tr()),
                             onPressed: () {
                               Navigator.of(context).pop();
                             },
                           ),
                           TextButton(
-                            child: const Text('Speichern'),
+                            child: Text('action.save'.tr()),
                             onPressed: () {
                               onEdit(index, editController.text);
                               Navigator.of(context).pop();

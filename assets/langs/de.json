@@ -1,0 +1,75 @@
+{
+  "habit_flow": "Habit Flow",
+  "notifications_enable": "Benachrichtigungen aktivieren",
+  "notifications_disable": "Benachrichtigungen deaktivieren",
+  "notifications_enabled": "Benachrichtigungen aktiviert",
+  "notifications_disabled": "Benachrichtigungen deaktiviert",
+  "reminder_set": "Erinnerungszeit festlegen",
+  "reminder_change": "Erinnerungszeit: {time} ändern",
+  "reminder_set_snackbar": "Erinnerungszeit gesetzt: {time}",
+  "done_of_total": "{done} von {total} erledigt",
+  "streak": "🔥 Streak: {days} Tage",
+  "edit": "Bearbeiten",
+  "delete": "Löschen",
+  "delete_confirm_title": "Löschen?",
+  "delete_confirm_text": "Möchten Sie \"{habit}\" wirklich löschen?",
+  "cancel": "Abbrechen",
+  "add": "Hinzufügen",
+  "error": "Fehler: {error}",
+
+  "loading": "Lade...",
+
+  "settings": {
+    "title": "Einstellungen",
+    "appearance": "Darstellung",
+    "system": "System",
+    "dark": "Dunkel",
+    "light": "Hell"
+  },
+
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "reminder_time": "Erinnerungszeit",
+    "not_set": "Nicht gesetzt",
+    "instant_title": "HabitFlow Sofort-Test",
+    "instant_body": "Das ist eine sofortige Test-Benachrichtigung!",
+    "reminder_title": "HabitFlow Erinnerung",
+    "reminder_body": "Nicht vergessen, deine Gewohnheiten zu checken!",
+    "channel_name": "Erinnerungen"
+  },
+
+  "sync": {
+    "synced": "Synchronisiert",
+    "syncing": "Synchronisiere...",
+    "finished": "Synchronisation abgeschlossen",
+    "error": "Sync-Fehler: {error}"
+  }
+  ,
+  "splash": {
+    "welcome": "Willkommen zu Habit Flow",
+    "quote_error": "Fehler beim Laden des Zitats"
+  },
+  "habit_dialog": {
+    "new": "Neue Gewohnheit",
+    "edit": "Gewohnheit bearbeiten",
+    "name": "Name",
+    "name_hint": "z.B. Meditation",
+    "description": "Beschreibung",
+    "description_hint": "z.B. 10 Minuten Morgen-Meditation",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "name_required": "Bitte geben Sie einen Namen ein"
+}
+
+  ,
+  "tasks": {
+    "edit_title": "Task bearbeiten",
+    "edit_hint": "Task bearbeiten"
+  },
+  "action": {
+    "save": "Speichern"
+  }
+}
+
