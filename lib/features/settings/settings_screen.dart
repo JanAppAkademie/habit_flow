@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_flow/core/providers/theme_provider.dart';
-import 'package:habit_flow/features/task_list/providers/notification_provider.dart';
-import 'package:habit_flow/features/task_list/providers/reminder_time_provider.dart';
+import 'package:habit_flow/core/providers/notification_provider.dart';
+import 'package:habit_flow/core/providers/reminder_time_provider.dart';
 import 'package:habit_flow/features/task_list/services/notification_service.dart';
 import 'package:easy_localization/easy_localization.dart';
 

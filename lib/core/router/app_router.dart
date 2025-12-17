@@ -1,5 +1,5 @@
 import 'package:go_router/go_router.dart';
-import 'package:habit_flow/features/splash/splash_screen.dart';
+import 'package:habit_flow/features/splash/screens/splash_screen.dart';
 import 'package:habit_flow/features/task_list/screens/home_screen.dart';
 import 'package:habit_flow/features/settings/settings_screen.dart';
 
