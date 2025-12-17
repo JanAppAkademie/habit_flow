@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:habit_flow/features/task_list/models/habit.dart';
 import 'package:habit_flow/core/services/device_id.dart';
 import 'package:flutter/foundation.dart';
@@ -21,13 +21,32 @@ class SyncService {
   final supabase = Supabase.instance.client;
   StreamSubscription? _connectivitySub;
   bool _syncRunning = false;
+  /// Notifier for running state so UI/providers can listen.
+  final ValueNotifier<bool> isRunningNotifier = ValueNotifier<bool>(false);
+
+  /// Expose whether a sync is currently running.
+  bool get isRunning => isRunningNotifier.value;
 
   Future<void> init() async {
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((result) {
-      // `onConnectivityChanged` liefert ein einzelnes `ConnectivityResult`.
-      if (result.any((status) => status != ConnectivityResult.none)) {
-        trySync();
-      }
+    // Use InternetConnectionChecker which actually verifies internet reachability
+    // and avoid acting on transient platform connectivity events (e.g. connected to
+    // a WiFi network without actual internet). Add a small debounce so DNS can
+    // settle before attempting a sync.
+    _connectivitySub = InternetConnectionChecker().onStatusChange.listen((status) {
+      final online = status == InternetConnectionStatus.connected;
+      debugPrint('[SyncService.init] InternetConnectionChecker status: $status -> online=$online');
+      if (!online) return;
+
+      // Debounce slightly to avoid racing against flaky DNS/resolution on some networks
+      Future.delayed(const Duration(seconds: 1), () async {
+        final stillOnline = await InternetConnectionChecker().hasConnection;
+        debugPrint('[SyncService.init] post-debounce hasConnection=$stillOnline');
+        if (stillOnline) {
+          trySync();
+        } else {
+          debugPrint('[SyncService.init] Skipping trySync() after debounce; no connection');
+        }
+      });
     });
   }
 
@@ -51,12 +70,21 @@ class SyncService {
   }
 
   Future<void> trySync() async {
+    // Quick pre-check: ensure we actually have working internet before starting.
+    final hasNet = await InternetConnectionChecker().hasConnection;
+    if (!hasNet) {
+      debugPrint('[SyncService] trySync() aborted: no internet connectivity detected');
+      return;
+    }
+
     if (_syncRunning) {
       debugPrint('[SyncService] trySync() called but a sync is already running; skipping');
       return;
     }
 
+    debugPrint('[SyncService] trySync() called — starting sync');
     _syncRunning = true;
+    isRunningNotifier.value = true;
     try {
       if (_queue.isEmpty) {
         isSynced.value = true;
@@ -64,6 +92,8 @@ class SyncService {
         return;
       }
       debugPrint('[SyncService] Starting sync for ${_queue.length} entries...');
+      // Explicit, unmistakable log for audit/debugging
+      debugPrint('[SyncService] Ich synchronisiere diese Fucking lokale Database zu Supabase');
     final toRemove = <Map<String, dynamic>>[];
     for (final entry in _queue) {
       final habitJson = entry['habit'] as Map<String, dynamic>;
@@ -82,10 +112,20 @@ class SyncService {
       }
     }
     _queue.removeWhere((entry) => toRemove.contains(entry));
+    // Report a clear, timestamped summary of what was synchronized
+    final syncedCount = toRemove.length;
+    final remaining = _queue.length;
+    final ts = DateTime.now().toIso8601String();
+    if (syncedCount > 0) {
+      debugPrint('[SyncService] PERFORMED SYNC -> synced=$syncedCount remaining=$remaining at $ts');
+    } else {
+      debugPrint('[SyncService] SYNC RUN (no entries synced) -> remaining=$remaining at $ts');
+    }
     isSynced.value = _queue.isEmpty;
-    debugPrint('[SyncService] Sync finished. Remaining: ${_queue.length}');
     } finally {
       _syncRunning = false;
+      isRunningNotifier.value = false;
+      debugPrint('[SyncService] trySync() finished — running set to false');
     }
   }
   // Getter für Queue-Länge

@@ -30,3 +30,29 @@ class SyncStatusNotifier extends Notifier<bool> {
 }
 
 final syncStatusProvider = NotifierProvider<SyncStatusNotifier, bool>(SyncStatusNotifier.new);
+
+class SyncRunningNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    _listen();
+    final v = SyncService().isRunning;
+    debugPrint('[sync_running_provider] build -> isRunning=$v');
+    return v;
+  }
+
+  void _listen() {
+    SyncService().isRunningNotifier.addListener(_update);
+  }
+
+  void _update() {
+    final v = SyncService().isRunning;
+    debugPrint('[sync_running_provider] _update -> isRunning=$v');
+    state = v;
+  }
+
+  void dispose() {
+    SyncService().isRunningNotifier.removeListener(_update);
+  }
+}
+
+final syncRunningProvider = NotifierProvider<SyncRunningNotifier, bool>(SyncRunningNotifier.new);

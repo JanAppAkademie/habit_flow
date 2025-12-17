@@ -37,20 +37,38 @@ class _ListScreenState extends ConsumerState<ListScreen> {
       debugPrint('[ListScreen] Attaching connectivity and sync listeners');
 
       ref.listen<AsyncValue<bool>>(connectivityProvider, (previous, next) {
+        debugPrint('[ListScreen.connectivity.listen] previous=$previous next=$next');
         next.when(
           data: (online) async {
-            debugPrint('[ListScreen] connectivity changed -> online: $online');
+            final now = DateTime.now().toIso8601String();
+            debugPrint('[ListScreen] connectivity changed -> online: $online at $now');
             if (!online) {
-              // No sticky handling — UI will reflect connectivity via color only.
+              debugPrint('[ListScreen] offline — no sync will be attempted');
               return;
             }
-            // Went back online: proactively trigger a sync.
-            debugPrint('[ListScreen] back online — attempting trySync()');
-            try {
-              await SyncService().trySync();
-              debugPrint('[ListScreen] trySync() finished; isSynced=${SyncService().isSynced.value}');
-            } catch (e) {
-              debugPrint('[ListScreen] trySync() failed: $e');
+
+            // Evaluate SyncService state to decide whether to sync
+            final isSynced = SyncService().isSynced.value;
+            final queueLen = SyncService().queueLength;
+            final running = ref.read(syncRunningProvider);
+            final needSync = !isSynced || queueLen > 0;
+            debugPrint('[ListScreen] back online -> needSync=$needSync isSynced=$isSynced queueLen=$queueLen running=$running');
+
+            if (running) {
+              debugPrint('[ListScreen] A sync is already running; skipping explicit trySync() call');
+              return;
+            }
+
+            if (needSync) {
+              debugPrint('[ListScreen] calling SyncService.trySync()');
+              try {
+                await SyncService().trySync();
+                debugPrint('[ListScreen] SyncService.trySync() returned; isSynced=${SyncService().isSynced.value} queueLen=${SyncService().queueLength} isRunning=${ref.read(syncRunningProvider)}');
+              } catch (e) {
+                debugPrint('[ListScreen] trySync() threw: $e');
+              }
+            } else {
+              debugPrint('[ListScreen] No sync necessary on reconnect (needSync=false)');
             }
           },
           loading: () {},
@@ -68,7 +86,9 @@ class _ListScreenState extends ConsumerState<ListScreen> {
     final syncedDbg = ref.watch(syncStatusProvider);
     final onlineAsyncDbg = ref.watch(connectivityProvider);
     final onlineDbg = onlineAsyncDbg.when(data: (v) => v, loading: () => true, error: (_,__) => false);
-    debugPrint('[ListScreen.build] synced=$syncedDbg online=$onlineDbg');
+    final runningDbg = ref.watch(syncRunningProvider);
+    final queueDbg = SyncService().queueLength;
+    debugPrint('[ListScreen.build] synced=$syncedDbg online=$onlineDbg running=$runningDbg queueLen=$queueDbg');
 
     return ref.watch(habitProvider).when(
       data: (habits) {
@@ -80,39 +100,76 @@ class _ListScreenState extends ConsumerState<ListScreen> {
         final onlineAsync = ref.watch(connectivityProvider);
         final online = onlineAsync.when(data: (v) => v, loading: () => true, error: (_,__) => false);
 
+        final running = ref.watch(syncRunningProvider);
+        final queueLen = SyncService().queueLength;
+
+        // Determine icon + color
+        IconData cloudIcon;
+        Color cloudColor;
+        if (!online) {
+          cloudIcon = Icons.cloud_off;
+          cloudColor = Colors.redAccent;
+        } else if (running) {
+          cloudIcon = Icons.sync;
+          cloudColor = Colors.orange;
+        } else if (queueLen > 0 || !synced) {
+          cloudIcon = Icons.sync;
+          cloudColor = Colors.orangeAccent;
+        } else {
+          cloudIcon = Icons.cloud_done;
+          cloudColor = Colors.green;
+        }
+
         return Scaffold(
           appBar: AppBar(
             leading: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: IconButton(
-                iconSize: 26,
-                padding: EdgeInsets.zero,
+              child: Builder(builder: (context) {
+                // Determine AppBar background to avoid using an icon color that
+                // would blend into it. Use a white icon for the sync state to
+                // make syncing clearly visible; for other states keep the
+                // cloudColor but fallback to onPrimary if it would match the
+                // AppBar background.
+                final appBarBg = Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).colorScheme.primary;
+                Color iconColor;
+                if (cloudIcon == Icons.sync) {
+                  iconColor = Colors.white; // user preference: sync icon white
+                } else {
+                  iconColor = cloudColor;
+                  if (iconColor == appBarBg) {
+                    iconColor = Theme.of(context).colorScheme.onPrimary;
+                  }
+                }
+
+                return IconButton(
+                  iconSize: 26,
+                  padding: EdgeInsets.zero,
                   icon: Icon(
-                    // Show cloud icon when synced, show sync icon while an active sync is running
-                    synced ? Icons.cloud_done : Icons.sync,
-                    color: (!online ? Colors.redAccent : (synced ? Colors.green : Theme.of(context).colorScheme.onSurface)),
+                    cloudIcon,
+                    color: iconColor,
                     size: 26,
                   ),
-                onPressed: () async {
-                  try {
-                    await repository.fullSync();
-                    // refresh provider to reload local data
-                    // ignore: unused_result
-                    ref.refresh(habitProvider);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('sync.finished'.tr()), duration: const Duration(seconds: 1)),
-                      );
+                  onPressed: () async {
+                    try {
+                      await repository.fullSync();
+                      // refresh provider to reload local data
+                      // ignore: unused_result
+                      ref.refresh(habitProvider);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('sync.finished'.tr()), duration: const Duration(seconds: 1)),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('sync.error'.tr(namedArgs: {'error': e.toString()})), backgroundColor: Colors.red),
+                        );
+                      }
                     }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('sync.error'.tr(namedArgs: {'error': e.toString()})), backgroundColor: Colors.red),
-                      );
-                    }
-                  }
-                },
-              ),
+                  },
+                );
+              }),
             ),
             title: Text('habit_flow'.tr()),
             centerTitle: true,
