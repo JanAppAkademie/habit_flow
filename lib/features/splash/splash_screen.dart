@@ -2,7 +2,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:habit_flow/core/router/app_router.dart';
 import 'quote_provider.dart';
@@ -40,11 +39,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 highlightColor: const Color.fromRGBO(228, 132, 255, 0.724),
                 child: Text(
                   'splash.welcome'.tr(),
-                  style: GoogleFonts.robotoMono(
-                    textStyle: Theme.of(context).textTheme.headlineMedium
+                  style: Theme.of(context).textTheme.headlineMedium
                         ?.copyWith(fontSize: 36, fontWeight: FontWeight.w800),
                   ),
-                ),
               ),
               const SizedBox(height: 20),
               const Icon(Icons.check_circle_outline, size: 48),
