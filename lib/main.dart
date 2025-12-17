@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_flow/features/task_list/models/habit_repository.dart';
+import 'package:habit_flow/core/providers/habit_repository_provider.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:habit_flow/app.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:habit_flow/core/services/notification_service.dart';
 import 'package:easy_localization/easy_localization.dart';
-
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,10 +54,16 @@ void main() async {
     anonKey: supabaseAnonKey,
   );
 
-  // Initialisiere Repository
-  await initializeHabitRepository();
+  // Create container for providers
+  final container = ProviderContainer();
+
+  // Initialize Repository
+  final habitRepo = HabitRepository(container);
+  await habitRepo.init();
+  // Set global
+  habitRepositoryGlobal = habitRepo;
   // Automatischer Sync beim App-Start
-  await getHabitRepository().fullSync();
+  await habitRepo.fullSync();
 
     // Initialize Notification Service
     await NotificationService.initialize();
@@ -72,7 +77,7 @@ void main() async {
         supportedLocales: const [Locale('de')],
         path: 'assets/langs',
         fallbackLocale: const Locale('de'),
-        child: const ProviderScope(child: App()),
+        child: ProviderScope(child: const App()),
       ),
     );
 }

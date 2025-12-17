@@ -3,16 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:hive_ce/hive.dart';
 import 'habit.dart';
 import 'habit_hive_adapter.dart';
-import 'package:habit_flow/core/services/sync_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_flow/core/services/device_id.dart';
+import 'package:habit_flow/core/providers/sync_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 
 
 
 class HabitRepository {
+  final ProviderContainer container;
   static const String _boxName = 'habits';
   late Box<HabitHive> _box;
   bool _initialized = false;
+
+  HabitRepository(this.container);
 
   Future<void> init() async {
     if (_initialized) return;
@@ -33,7 +38,7 @@ class HabitRepository {
         }
       }
     } catch (_) {}
-    await SyncService().init();
+    // await SyncService().init(); // now in provider
     // Migration: Alte Daten mit streakDays zu completedDates migrieren
     try {
       final keysToUpdate = <String>[];
@@ -69,7 +74,7 @@ class HabitRepository {
 
   /// Lädt alle Habits aus Supabase und synchronisiert sie mit der lokalen Hive-Datenbank
   Future<void> syncFromSupabase() async {
-    final supabase = SyncService().supabase;
+    final supabase = Supabase.instance.client;
     try {
       // Nur Zeilen abrufen, die zu diesem Gerät gehören (gerätbezogene Synchronisation)
       final deviceId = await DeviceId.getOrCreate();
@@ -103,7 +108,7 @@ class HabitRepository {
 
   /// Lädt alle lokalen Habits, die `needsSync=true` haben, zu Supabase hoch
   Future<void> uploadLocalChanges() async {
-    final supabase = SyncService().supabase;
+    final supabase = Supabase.instance.client;
     final dirtyHabits = _box.values
         .map((hive) => hive.toHabit())
         .where((h) => h.needsSync)
@@ -126,9 +131,8 @@ class HabitRepository {
 
   Future<void> fullSync() async {
     // Markiere Sync als in Arbeit, damit die UI einen Sync-Zustand anzeigen kann
-    try {
-      SyncService().isSynced.value = false;
-    } catch (_) {}
+    final syncNotifier = container.read(syncServiceProvider.notifier);
+    syncNotifier.setIsSynced(false);
     var success = false;
     try {
       await uploadLocalChanges();
@@ -138,11 +142,7 @@ class HabitRepository {
       debugPrint('[HabitRepository] fullSync failed: $e');
       success = false;
     } finally {
-      try {
-        SyncService().isSynced.value = success;
-      } catch (_) {
-        debugPrint('SyncService disposed before fullSync could complete.');
-      }
+      syncNotifier.setIsSynced(success);
     }
   }
 
@@ -163,15 +163,17 @@ class HabitRepository {
   Future<void> add(Habit habit) async {
     if (!_initialized) await init();
     await _box.put(habit.id, HabitHive.fromHabit(habit));
-    await SyncService().addToQueue(habit, 'insert');
-    await SyncService().trySync();
+    final syncNotifier = container.read(syncServiceProvider.notifier);
+    await syncNotifier.addToQueue(habit, 'insert');
+    await syncNotifier.trySync();
   }
 
   Future<void> update(Habit habit) async {
     if (!_initialized) await init();
     await _box.put(habit.id, HabitHive.fromHabit(habit));
-    await SyncService().addToQueue(habit, 'update');
-    await SyncService().trySync();
+    final syncNotifier = container.read(syncServiceProvider.notifier);
+    await syncNotifier.addToQueue(habit, 'update');
+    await syncNotifier.trySync();
   }
 
   Future<void> delete(String id) async {
@@ -179,8 +181,9 @@ class HabitRepository {
     final habit = await getById(id);
     await _box.delete(id);
     if (habit != null) {
-      await SyncService().addToQueue(habit, 'delete');
-      await SyncService().trySync();
+      final syncNotifier = container.read(syncServiceProvider.notifier);
+      await syncNotifier.addToQueue(habit, 'delete');
+      await syncNotifier.trySync();
     }
   }
 
@@ -195,13 +198,3 @@ class HabitRepository {
     }).asyncMap((future) => future);
   }
 }
-
-// Globale Instanz
-late final HabitRepository _habitRepository;
-
-Future<void> initializeHabitRepository() async {
-  _habitRepository = HabitRepository();
-  await _habitRepository.init();
-}
-
-HabitRepository getHabitRepository() => _habitRepository;

@@ -2,12 +2,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_flow/features/task_list/models/habit.dart';
-import 'package:habit_flow/features/task_list/models/habit_repository.dart';
+import 'package:habit_flow/core/providers/habit_repository_provider.dart';
 import 'package:habit_flow/core/providers/habit_provider.dart';
 import 'package:habit_flow/core/providers/theme_provider.dart';
-import 'package:habit_flow/core/providers/sync_status_provider.dart';
+import 'package:habit_flow/core/providers/sync_provider.dart';
 import 'package:habit_flow/core/providers/connectivity_provider.dart';
-import 'package:habit_flow/core/services/sync_service.dart';
 import 'package:habit_flow/core/router/app_router.dart';
 import 'package:go_router/go_router.dart';
 import 'package:habit_flow/features/task_list/widgets/empty_content.dart';
@@ -47,10 +46,11 @@ class _ListScreenState extends ConsumerState<ListScreen> {
               return;
             }
 
-            // Evaluate SyncService state to decide whether to sync
-            final isSynced = SyncService().isSynced.value;
-            final queueLen = SyncService().queueLength;
-            final running = ref.read(syncRunningProvider);
+            // Evaluate sync state to decide whether to sync
+            final syncState = ref.read(syncServiceProvider);
+            final isSynced = syncState.isSynced;
+            final queueLen = syncState.queueLength;
+            final running = syncState.isRunning;
             final needSync = !isSynced || queueLen > 0;
             debugPrint('[ListScreen] back online -> needSync=$needSync isSynced=$isSynced queueLen=$queueLen running=$running');
 
@@ -60,10 +60,11 @@ class _ListScreenState extends ConsumerState<ListScreen> {
             }
 
             if (needSync) {
-              debugPrint('[ListScreen] calling SyncService.trySync()');
+              debugPrint('[ListScreen] calling trySync()');
               try {
-                await SyncService().trySync();
-                debugPrint('[ListScreen] SyncService.trySync() returned; isSynced=${SyncService().isSynced.value} queueLen=${SyncService().queueLength} isRunning=${ref.read(syncRunningProvider)}');
+                await ref.read(syncServiceProvider.notifier).trySync();
+                final newState = ref.read(syncServiceProvider);
+                debugPrint('[ListScreen] trySync() returned; isSynced=${newState.isSynced} queueLen=${newState.queueLength} isRunning=${newState.isRunning}');
               } catch (e) {
                 debugPrint('[ListScreen] trySync() threw: $e');
               }
@@ -76,19 +77,17 @@ class _ListScreenState extends ConsumerState<ListScreen> {
         );
       });
 
-      ref.listen<bool>(syncStatusProvider, (previous, next) {
-        debugPrint('[ListScreen] syncStatusProvider changed -> $previous -> $next');
+      ref.listen<SyncState>(syncServiceProvider, (previous, next) {
+        debugPrint('[ListScreen] syncServiceProvider changed -> isSynced: ${previous?.isSynced} -> ${next.isSynced}');
       });
     }
-    final repository = getHabitRepository();
+    final repository = ref.watch(habitRepositoryProvider);
 
     // Log build-time state to help debug missing events
-    final syncedDbg = ref.watch(syncStatusProvider);
+    final syncState = ref.watch(syncServiceProvider);
     final onlineAsyncDbg = ref.watch(connectivityProvider);
     final onlineDbg = onlineAsyncDbg.when(data: (v) => v, loading: () => true, error: (_,__) => false);
-    final runningDbg = ref.watch(syncRunningProvider);
-    final queueDbg = SyncService().queueLength;
-    debugPrint('[ListScreen.build] synced=$syncedDbg online=$onlineDbg running=$runningDbg queueLen=$queueDbg');
+    debugPrint('[ListScreen.build] synced=${syncState.isSynced} online=$onlineDbg running=${syncState.isRunning} queueLen=${syncState.queueLength}');
 
     return ref.watch(habitProvider).when(
       data: (habits) {
@@ -96,12 +95,9 @@ class _ListScreenState extends ConsumerState<ListScreen> {
         final totalCount = habits.length;
 
         final _ = ref.watch(themeModeProvider);
-        final synced = ref.watch(syncStatusProvider);
+        final syncState = ref.watch(syncServiceProvider);
         final onlineAsync = ref.watch(connectivityProvider);
         final online = onlineAsync.when(data: (v) => v, loading: () => true, error: (_,__) => false);
-
-        final running = ref.watch(syncRunningProvider);
-        final queueLen = SyncService().queueLength;
 
         // Determine icon + color
         IconData cloudIcon;
@@ -109,10 +105,10 @@ class _ListScreenState extends ConsumerState<ListScreen> {
         if (!online) {
           cloudIcon = Icons.cloud_off;
           cloudColor = Colors.redAccent;
-        } else if (running) {
+        } else if (syncState.isRunning) {
           cloudIcon = Icons.sync;
-          cloudColor = Colors.orange;
-        } else if (queueLen > 0 || !synced) {
+          cloudColor = Colors.white; // Changed to white for running state
+        } else if (syncState.queueLength > 0 || !syncState.isSynced) {
           cloudIcon = Icons.sync;
           cloudColor = Colors.orangeAccent;
         } else {

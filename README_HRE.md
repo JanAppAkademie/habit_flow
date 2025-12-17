@@ -8,7 +8,7 @@
 - **Lokale Persistenz**: Hive (via `hive_ce_flutter`) speichert Habits lokal auf dem Gerät.
 - **Bidirektionale Synchronisation**: Vollsync zwischen lokalem Hive und Supabase inkl. Upload lokaler Änderungen und Download von Serverdaten.
 - **Geräte‑Scoped Sync**: Jede Änderung enthält ein `device_id`‑Feld; Downloads sind gefiltert (dieses Gerät ODER server-seeded rows), um unerwünschte Überschreibungen zu vermeiden.
-- **Sync-Queue & Status**: `SyncService` verwaltet ausstehende Uploads und bietet ein `isSynced`-Flag, das in der UI reflektiert wird.
+- **Sync-Queue & Status**: `SyncNotifier` (NotifierProvider) verwaltet ausstehende Uploads und bietet `SyncState` (isSynced, isRunning, queueLength), das in der UI reflektiert wird.
 - **Offline‑Robustheit & Migration**: Defensive Deserialisierung in den Hive TypeAdapters und Repository‑Level Normalisierung konvertiert ältere/abweichende Persistenzformate (z. B. int/Strings für DateTime, bool als int) ohne Absturz.
 - **Benachrichtigungen**: Hintergrund‑/lokale Notifications via `flutter_local_notifications` werden unterstützt (NotificationService).
 - **UI/UX**: Pull-to-Refresh (`RefreshIndicator`) zur manuellen Synchronisation plus ein tappbares Cloud-Icon links, das Sync auslöst; Icon-Farbe spiegelt Sync/Connectivity-Status.
@@ -16,7 +16,7 @@
 - **Quotes Auto-Refresh**: Zitat-Widget refresh alle Minute via Riverpod/Timer.
 
 **Wichtige technische Eigenschaften**
-- **Framework**: Flutter + Riverpod (`flutter_riverpod`) für State Management.
+- **Framework**: Flutter + Riverpod (`flutter_riverpod`) für State Management — vollständig migriert, kein ValueNotifier mehr; alles über Provider und Notifier.
 - **Local DB**: Hive (CE) mit generierten TypeAdapters (`build_runner` + `hive_generator` pattern). Adapter enthalten defensive Parsing-Logik.
 - **Backend**: Supabase (`supabase_flutter`) als Postgres-Backend mit REST/Realtime-Funktionen.
 - **Secrets Handling**: Supabase-Keys werden nicht hardcodiert.
@@ -31,8 +31,8 @@
 - **App-Entry**: `lib/main.dart` — initialisiert Hive, Supabase, Repository, NotificationService und EasyLocalization.
 - **UI**: `lib/app.dart` und Bildschirm-Komponenten unter `lib/features/` (z. B. `lib/features/task_list/screens/list_screen.dart`, `lib/features/settings/`).
 - **Model/Adapter**: `lib/features/task_list/models/` enthält `habit.dart` und die generierten Hive-Adapter.
-- **Repository/Sync**: `lib/features/task_list/models/habit_repository.dart`, `lib/core/services/sync_service.dart`.
-- **Globale Services & Provider**: `lib/core/services/` (z. B. `notification_service.dart`, `device_id.dart`, `quote_api.dart`) und `lib/core/providers/` (z. B. `connectivity_provider.dart`, `theme_provider.dart`, `sync_status_provider.dart`, `notification_provider.dart`, `quote_provider.dart`).
+- **Repository/Sync**: `lib/features/task_list/models/habit_repository.dart`, `lib/core/providers/sync_provider.dart` (SyncNotifier).
+- **Globale Services & Provider**: `lib/core/services/` (z. B. `notification_service.dart`, `device_id.dart`, `quote_api.dart`) und `lib/core/providers/` (z. B. `connectivity_provider.dart`, `theme_provider.dart`, `sync_provider.dart`, `notification_provider.dart`, `quote_provider.dart`).
 - **Localization**: `assets/langs/de.json` enthält die deutschen Übersetzungen.
 - **Env-Dateien**: `assets/supabase/.env` (lokal, in `.gitignore`) und `assets/supabase/.env.example` als Vorlage.
 - **Generated files / codegen**: `lib/hive_registrar.g.dart` (und weitere `*.g.dart`-Dateien nach `build_runner`).
@@ -107,14 +107,14 @@ habit_flow/
 │  │  │  ├─ notification_provider.dart
 │  │  │  ├─ quote_provider.dart
 │  │  │  ├─ reminder_time_provider.dart
-│  │  │  ├─ sync_status_provider.dart
+│  │  │  ├─ sync_provider.dart
 │  │  │  └─ theme_provider.dart
 │  │  ├─ router/
 │  │  │  └─ app_router.dart
 │  │  ├─ services/
 │  │  │  ├─ device_id.dart
 │  │  │  ├─ notification_service.dart
-│  │  │  └─ sync_service.dart
+│  │  │  └─ quote_api.dart
 │  │  └─ theme/
 │  └─ features/
 │     ├─ settings/
@@ -129,7 +129,9 @@ habit_flow/
 │        ├─ models/
 │        │  ├─ habit.dart
 │        │  ├─ habit_hive_adapter.dart
-│        │  └─ habit_hive_adapter.g.dart
+│        │  ├─ habit_hive_adapter.g.dart
+│        │  ├─ habit_repository.dart
+│        │  └─ habit_repository_provider.dart
 │        ├─ screens/
 │        │  └─ list_screen.dart
 │        └─ widgets/
