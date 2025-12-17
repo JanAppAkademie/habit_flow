@@ -7,7 +7,7 @@
   "reminder_set": "Erinnerungszeit festlegen",
   "reminder_change": "Erinnerungszeit: {time} ändern",
   "reminder_set_snackbar": "Erinnerungszeit gesetzt: {time}",
-  "done_of_total": "{done} von {total} erledigt",
+  "done_of_total": "{done} von {total} Habits erledigt",
   "streak": "🔥 Streak: {days} Tage",
   "edit": "Bearbeiten",
   "delete": "Löschen",
@@ -48,7 +48,7 @@
   }
   ,
   "splash": {
-    "welcome": "Willkommen zu Habit Flow",
+    "welcome": "Willkommen zu\nHabit Flow",
     "quote_error": "Fehler beim Laden des Zitats"
   },
   "habit_dialog": {

@@ -39,6 +39,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 highlightColor: const Color.fromRGBO(228, 132, 255, 0.724),
                 child: Text(
                   'splash.welcome'.tr(),
+                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium
                         ?.copyWith(fontSize: 36, fontWeight: FontWeight.w800),
                   ),

@@ -20,7 +20,7 @@ class MotivationBanner extends ConsumerWidget {
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: SizedBox(
-                height: 150,
+                height: 100,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),

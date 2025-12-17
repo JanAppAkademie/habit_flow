@@ -35,37 +35,34 @@ class ListScreen extends ConsumerWidget {
           appBar: AppBar(
             leading: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Tooltip(
-                message: synced ? 'sync.synced'.tr() : 'sync.syncing'.tr(),
-                child: IconButton(
-                  iconSize: 26,
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    // Show cloud icon when synced, show sync icon while an active sync is running
-                    synced ? Icons.cloud_done : Icons.sync,
-                    color: (!online) ? Colors.orange : (synced ? Colors.green : Colors.orange),
-                    size: 26,
-                  ),
-                  onPressed: () async {
-                    try {
-                      await repository.fullSync();
-                      // refresh provider to reload local data
-                      // ignore: unused_result
-                      ref.refresh(habitProvider);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('sync.finished'.tr()), duration: const Duration(seconds: 1)),
-                        );
-                      }
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('sync.error'.tr(namedArgs: {'error': e.toString()})), backgroundColor: Colors.red),
-                        );
-                      }
-                    }
-                  },
+              child: IconButton(
+                iconSize: 26,
+                padding: EdgeInsets.zero,
+                icon: Icon(
+                  // Show cloud icon when synced, show sync icon while an active sync is running
+                  synced ? Icons.cloud_done : Icons.sync,
+                  color: (!online) ? Colors.redAccent : (synced ? Colors.green : Colors.white),
+                  size: 26,
                 ),
+                onPressed: () async {
+                  try {
+                    await repository.fullSync();
+                    // refresh provider to reload local data
+                    // ignore: unused_result
+                    ref.refresh(habitProvider);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('sync.finished'.tr()), duration: const Duration(seconds: 1)),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('sync.error'.tr(namedArgs: {'error': e.toString()})), backgroundColor: Colors.red),
+                      );
+                    }
+                  }
+                },
               ),
             ),
             title: Text('habit_flow'.tr()),
@@ -73,11 +70,25 @@ class ListScreen extends ConsumerWidget {
             elevation: 0,
             actions: [
               IconButton(
-                tooltip: 'Einstellungen',
                 icon: const Icon(Icons.settings),
                 onPressed: () {
                   // Navigate to settings screen
                   context.push(AppRoutes.settings);
+                },
+              ), 
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => const HabitDialog(),
+                  ).then((result) async {
+                    if (result is Habit) {
+                      await repository.add(result);
+                      // ignore: unawaited_futures, unused_result
+                      ref.refresh(habitProvider);
+                    }
+                  });
                 },
               ),
             ],
@@ -142,7 +153,7 @@ class ListScreen extends ConsumerWidget {
                         )
                         : ListView.builder(
                           itemCount: habits.length,
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                           itemBuilder: (context, index) {
                             final habit = habits[index];
                             return Padding(
@@ -256,21 +267,7 @@ class ListScreen extends ConsumerWidget {
               ),
             ],
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => const HabitDialog(),
-              ).then((result) async {
-                if (result is Habit) {
-                  await repository.add(result);
-                  // ignore: unawaited_futures, unused_result
-                  ref.refresh(habitProvider);
-                }
-              });
-            },
-            child: Icon(Icons.add, semanticLabel: 'add'.tr()),
-          ),
+          // FloatingActionButton removed; use AppBar action for adding a habit
         );
       },
       loading: () {
