@@ -100,9 +100,8 @@ class HabitRepository {
       }
     } catch (e) {
       debugPrint('[HabitRepository] syncFromSupabase failed: $e');
-      // If network is unavailable or Supabase cannot be reached, simply return
-      // and keep local data intact. A later retry will pick up pending changes.
-      return;
+      // If network is unavailable or Supabase cannot be reached, throw to fail the sync
+      rethrow;
     }
   }
 
@@ -113,6 +112,7 @@ class HabitRepository {
         .map((hive) => hive.toHabit())
         .where((h) => h.needsSync)
         .toList();
+    bool hasErrors = false;
     for (final habit in dirtyHabits) {
       try {
         final deviceId = await DeviceId.getOrCreate();
@@ -124,8 +124,12 @@ class HabitRepository {
         await _box.put(habit.id, HabitHive.fromHabit(updated));
       } catch (e) {
         debugPrint('[HabitRepository] uploadLocalChanges: failed to upload habit ${habit.id}: $e');
+        hasErrors = true;
         // leave needsSync = true so it will be retried later
       }
+    }
+    if (hasErrors) {
+      throw Exception('Some local changes failed to upload due to connectivity issues.');
     }
   }
 
@@ -143,6 +147,9 @@ class HabitRepository {
       success = false;
     } finally {
       syncNotifier.setIsSynced(success);
+    }
+    if (!success) {
+      throw Exception('Sync failed due to connectivity issues or errors.');
     }
   }
 

@@ -55,6 +55,11 @@ class ListScreen extends ConsumerWidget {
               debugPrint('[ListScreen] trySync() returned; isSynced=${newState.isSynced} queueLen=${newState.queueLength} isRunning=${newState.isRunning}');
             } catch (e) {
               debugPrint('[ListScreen] trySync() threw: $e');
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('sync.error'.tr()), backgroundColor: Colors.red),
+                );
+              }
             }
           } else {
             debugPrint('[ListScreen] No sync necessary on reconnect (needSync=false)');

@@ -117,6 +117,7 @@ class SyncNotifier extends Notifier<SyncState> {
           toRemove.add(entry);
         } catch (e) {
           debugPrint('[SyncNotifier] Error syncing ${habitJson['id']}: $e');
+          rethrow;
         }
       }
       _queue.removeWhere((entry) => toRemove.contains(entry));
