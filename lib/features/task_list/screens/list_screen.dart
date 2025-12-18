@@ -84,7 +84,7 @@ class ListScreen extends ConsumerWidget {
         final _ = ref.watch(themeModeProvider);
         final syncState = ref.watch(syncServiceProvider);
         final onlineAsync = ref.watch(connectivityProvider);
-        final online = onlineAsync.when(data: (v) => v, loading: () => true, error: (_,__) => false);
+        final online = onlineAsync.when(data: (v) => v, loading: () => true , error: (_,__) => false);
 
         // Determine icon + color
         IconData cloudIcon;

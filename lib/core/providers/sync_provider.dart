@@ -5,6 +5,7 @@ import 'package:habit_flow/features/task_list/models/habit.dart';
 import 'package:habit_flow/core/services/device_id.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:habit_flow/core/providers/habit_repository_provider.dart';
 
 class SyncState {
   final bool isSynced;
@@ -57,6 +58,11 @@ class SyncNotifier extends Notifier<SyncState> {
     ref.onDispose(() {
       _connectivitySub?.cancel();
       _queue.clear();
+    });
+
+    // Initial sync
+    Future(() async {
+      await habitRepositoryGlobal.fullSync();
     });
 
     return const SyncState(isSynced: true, isRunning: false, queueLength: 0);

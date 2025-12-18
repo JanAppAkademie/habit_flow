@@ -62,8 +62,7 @@ void main() async {
   await habitRepo.init();
   // Set global
   habitRepositoryGlobal = habitRepo;
-  // Automatischer Sync beim App-Start
-  await habitRepo.fullSync();
+  // Automatischer Sync beim App-Start wird jetzt in SyncNotifier.build() gemacht
 
     // Initialize Notification Service
     await NotificationService.initialize();
