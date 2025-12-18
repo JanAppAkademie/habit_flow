@@ -29,7 +29,7 @@ class _QuoteWidgetState extends State<QuoteWidget> {
       if (mounted) {
         // ignore: use_build_context_synchronously
         final container = ProviderScope.containerOf(context, listen: false);
-        container.invalidate(quoteProvider);
+        container.invalidate(quoteFetchRandom);
       }
     });
   }
@@ -44,11 +44,11 @@ class _QuoteWidgetState extends State<QuoteWidget> {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
-        final quoteAsync = ref.watch(quoteProvider);
+        final quoteAsync = ref.watch(quoteFetchRandom);
         return RefreshIndicator(
           onRefresh: () async {
-            ref.invalidate(quoteProvider);
-            await ref.read(quoteProvider.future);
+            ref.invalidate(quoteFetchRandom);
+            await ref.read(quoteFetchRandom.future);
           },
           child: SizedBox(
             height: 120,

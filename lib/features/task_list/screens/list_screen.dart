@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habit_flow/features/task_list/models/habit.dart';
 import 'package:habit_flow/core/providers/habit_repository_provider.dart';
-import 'package:habit_flow/core/providers/habit_provider.dart';
 import 'package:habit_flow/core/providers/theme_provider.dart';
 import 'package:habit_flow/core/providers/sync_provider.dart';
 import 'package:habit_flow/core/providers/connectivity_provider.dart';
@@ -14,80 +13,68 @@ import 'package:habit_flow/features/task_list/widgets/habit_dialog.dart';
 import 'package:habit_flow/features/task_list/widgets/motivation_banner.dart';
 
 
-class ListScreen extends ConsumerStatefulWidget {
+class ListScreen extends ConsumerWidget {
   const ListScreen({super.key});
 
   @override
-  ConsumerState<ListScreen> createState() => _ListScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scrollController = ScrollController();
 
-class _ListScreenState extends ConsumerState<ListScreen> {
-  late final ScrollController _scrollController = ScrollController();
-
-  // We must register Riverpod listeners inside `build()` for ConsumerState.
-  // Use [_listenersAttached] to ensure we only register them once.
-  bool _listenersAttached = false;
-
-  @override
-  Widget build(BuildContext context) {
     // Attach listeners from inside build to satisfy Riverpod's debug checks.
-    if (!_listenersAttached) {
-      _listenersAttached = true;
-      debugPrint('[ListScreen] Attaching connectivity and sync listeners');
+    debugPrint('[ListScreen] Attaching connectivity and sync listeners');
 
-      ref.listen<AsyncValue<bool>>(connectivityProvider, (previous, next) {
-        debugPrint('[ListScreen.connectivity.listen] previous=$previous next=$next');
-        next.when(
-          data: (online) async {
-            final now = DateTime.now().toIso8601String();
-            debugPrint('[ListScreen] connectivity changed -> online: $online at $now');
-            if (!online) {
-              debugPrint('[ListScreen] offline — no sync will be attempted');
-              return;
+    ref.listen<AsyncValue<bool>>(connectivityProvider, (previous, next) {
+      debugPrint('[ListScreen.connectivity.listen] previous=$previous next=$next');
+      next.when(
+        data: (online) async {
+          final now = DateTime.now().toIso8601String();
+          debugPrint('[ListScreen] connectivity changed -> online: $online at $now');
+          if (!online) {
+            debugPrint('[ListScreen] offline — no sync will be attempted');
+            return;
+          }
+
+          // Evaluate sync state to decide whether to sync
+          final syncState = ref.read(syncServiceProvider);
+          final isSynced = syncState.isSynced;
+          final queueLen = syncState.queueLength;
+          final running = syncState.isRunning;
+          final needSync = !isSynced || queueLen > 0;
+          debugPrint('[ListScreen] back online -> needSync=$needSync isSynced=$isSynced queueLen=$queueLen running=$running');
+
+          if (running) {
+            debugPrint('[ListScreen] A sync is already running; skipping explicit trySync() call');
+            return;
+          }
+
+          if (needSync) {
+            debugPrint('[ListScreen] calling trySync()');
+            try {
+              await ref.read(syncServiceProvider.notifier).trySync();
+              final newState = ref.read(syncServiceProvider);
+              debugPrint('[ListScreen] trySync() returned; isSynced=${newState.isSynced} queueLen=${newState.queueLength} isRunning=${newState.isRunning}');
+            } catch (e) {
+              debugPrint('[ListScreen] trySync() threw: $e');
             }
+          } else {
+            debugPrint('[ListScreen] No sync necessary on reconnect (needSync=false)');
+          }
+        },
+        loading: () {},
+        error: (_, __) {},
+      );
+    });
 
-            // Evaluate sync state to decide whether to sync
-            final syncState = ref.read(syncServiceProvider);
-            final isSynced = syncState.isSynced;
-            final queueLen = syncState.queueLength;
-            final running = syncState.isRunning;
-            final needSync = !isSynced || queueLen > 0;
-            debugPrint('[ListScreen] back online -> needSync=$needSync isSynced=$isSynced queueLen=$queueLen running=$running');
-
-            if (running) {
-              debugPrint('[ListScreen] A sync is already running; skipping explicit trySync() call');
-              return;
-            }
-
-            if (needSync) {
-              debugPrint('[ListScreen] calling trySync()');
-              try {
-                await ref.read(syncServiceProvider.notifier).trySync();
-                final newState = ref.read(syncServiceProvider);
-                debugPrint('[ListScreen] trySync() returned; isSynced=${newState.isSynced} queueLen=${newState.queueLength} isRunning=${newState.isRunning}');
-              } catch (e) {
-                debugPrint('[ListScreen] trySync() threw: $e');
-              }
-            } else {
-              debugPrint('[ListScreen] No sync necessary on reconnect (needSync=false)');
-            }
-          },
-          loading: () {},
-          error: (_, __) {},
-        );
-      });
-
-      ref.listen<SyncState>(syncServiceProvider, (previous, next) {
-        debugPrint('[ListScreen] syncServiceProvider changed -> isSynced: ${previous?.isSynced} -> ${next.isSynced}');
-      });
-    }
+    ref.listen<SyncState>(syncServiceProvider, (previous, next) {
+      debugPrint('[ListScreen] syncServiceProvider changed -> isSynced: ${previous?.isSynced} -> ${next.isSynced}');
+    });
     final repository = ref.watch(habitRepositoryProvider);
 
     // Log build-time state to help debug missing events
-    final syncState = ref.watch(syncServiceProvider);
-    final onlineAsyncDbg = ref.watch(connectivityProvider);
-    final onlineDbg = onlineAsyncDbg.when(data: (v) => v, loading: () => true, error: (_,__) => false);
-    debugPrint('[ListScreen.build] synced=${syncState.isSynced} online=$onlineDbg running=${syncState.isRunning} queueLen=${syncState.queueLength}');
+//    final syncState = ref.watch(syncServiceProvider);
+//    final onlineAsyncDbg = ref.watch(connectivityProvider);
+//    final onlineDbg = onlineAsyncDbg.when(data: (v) => v, loading: () => true, error: (_,__) => false);
+//    debugPrint('[ListScreen.build] synced=${syncState.isSynced} online=$onlineDbg running=${syncState.isRunning} queueLen=${syncState.queueLength}');
 
     return ref.watch(habitProvider).when(
       data: (habits) {
@@ -121,11 +108,6 @@ class _ListScreenState extends ConsumerState<ListScreen> {
             leading: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Builder(builder: (context) {
-                // Determine AppBar background to avoid using an icon color that
-                // would blend into it. Use a white icon for the sync state to
-                // make syncing clearly visible; for other states keep the
-                // cloudColor but fallback to onPrimary if it would match the
-                // AppBar background.
                 final appBarBg = Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).colorScheme.primary;
                 Color iconColor;
                 if (cloudIcon == Icons.sync) {
@@ -192,8 +174,8 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                       ref.refresh(habitProvider);
                       // Scroll to top so the newly created item (newest) is visible
                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (_scrollController.hasClients) {
-                          _scrollController.animateTo(
+                        if (scrollController.hasClients) {
+                          scrollController.animateTo(
                             0,
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeOut,
@@ -266,7 +248,7 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                           ),
                         )
                         : ListView.builder(
-                          controller: _scrollController,
+                          controller: scrollController,
                           itemCount: habits.length,
                           padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                           itemBuilder: (context, index) {
@@ -407,12 +389,6 @@ class _ListScreenState extends ConsumerState<ListScreen> {
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 }
 

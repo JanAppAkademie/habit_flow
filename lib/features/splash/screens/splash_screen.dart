@@ -4,28 +4,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:habit_flow/core/router/app_router.dart';
-import '../../../core/providers/quote_provider.dart';
+import 'package:habit_flow/core/providers/quote_provider.dart';
 
-class SplashScreen extends ConsumerStatefulWidget {
+class SplashScreen extends ConsumerWidget {
   const SplashScreen({super.key});
 
-  @override
-  ConsumerState<SplashScreen> createState() => _SplashScreenState();
-}
 
-class _SplashScreenState extends ConsumerState<SplashScreen> {
-  bool _navigated = false;
 
   @override
-  void didUpdateWidget(covariant SplashScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _maybeNavigate();
-  }
+  Widget build(BuildContext context, WidgetRef ref) {
 
-  @override
-  Widget build(BuildContext context) {
-    final quoteAsync = ref.watch(quoteProvider);
-    _maybeNavigate();
+    void navigateToHome() {
+     // final quoteAsync = ref.read(quoteFetchRandom);
+     // if (quoteAsync is AsyncData || quoteAsync is AsyncError) {
+        Future.delayed(const Duration(milliseconds: 3000), () 
+        {
+          if (context.mounted) context.go(AppRoutes.home);
+        }
+        );
+    //  }
+    }
+
+    navigateToHome();
     return Scaffold(
       body: Center(
         child: Padding(
@@ -44,10 +44,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                         ?.copyWith(fontSize: 36, fontWeight: FontWeight.w800),
                   ),
               ),
-              const SizedBox(height: 20),
-              const Icon(Icons.check_circle_outline, size: 48),
+    //          const SizedBox(height: 20),
+    //          const Icon(Icons.check_circle_outline, size: 48),
               const SizedBox(height: 32),
-              quoteAsync.when(
+              ref.watch(quoteFetchRandom).when(
                 data: (quote) => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -71,15 +71,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       ),
     );
   }
-
-  void _maybeNavigate() {
-    if (_navigated) return;
-    final quoteAsync = ref.read(quoteProvider);
-    if (quoteAsync is AsyncData || quoteAsync is AsyncError) {
-      _navigated = true;
-      Future.delayed(const Duration(milliseconds: 2000), () {
-        if (mounted) context.go(AppRoutes.home);
-      });
-    }
-  }
 }
+
+
