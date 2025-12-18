@@ -62,7 +62,11 @@ class SyncNotifier extends Notifier<SyncState> {
 
     // Initial sync
     Future(() async {
-      await habitRepositoryGlobal.fullSync();
+      try {
+        await habitRepositoryGlobal.fullSync();
+      } catch (e) {
+        debugPrint('[SyncNotifier] Initial sync failed: $e');
+      }
     });
 
     return const SyncState(isSynced: true, isRunning: false, queueLength: 0);

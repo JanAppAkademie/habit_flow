@@ -51,3 +51,4 @@ app.*.map.json
 .env
 # Ignore any env placed under assets/supabase too
 assets/supabase/.env
+lib/test/x.dart
