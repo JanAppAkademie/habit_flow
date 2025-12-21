@@ -17,4 +17,3 @@ Map<String, dynamic> _$QuoteToJson(Quote instance) => <String, dynamic>{
   'quote': instance.quote,
   'author': instance.author,
 };
-

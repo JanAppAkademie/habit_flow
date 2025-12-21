@@ -14,18 +14,18 @@ class AuthService {
     String? name,
   }) async {
     try {
+      print('📝 Signing up user: $email with name: $name');
+
+      // Sign up with metadata - Trigger erstellt automatisch das Profil
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
+        data: name != null ? {'name': name} : null,
       );
 
       if (response.user != null) {
-        await _supabase.profiles().insert({
-          'id': response.user!.id,
-          'name': name,
-          'created_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        });
+        print('✅ User signed up successfully: ${response.user!.id}');
+        print('🔄 Profile will be created automatically by trigger');
 
         return AuthResult(
           success: true,
@@ -34,13 +34,16 @@ class AuthService {
         );
       }
 
+      print('❌ Sign up failed: No user returned');
       return AuthResult(
         success: false,
         errorMessage: 'Registrierung fehlgeschlagen',
       );
     } on AuthException catch (e) {
+      print('❌ AuthException during sign up: ${e.message}');
       return AuthResult(success: false, errorMessage: e.message);
     } catch (e) {
+      print('❌ Exception during sign up: $e');
       return AuthResult(success: false, errorMessage: e.toString());
     }
   }

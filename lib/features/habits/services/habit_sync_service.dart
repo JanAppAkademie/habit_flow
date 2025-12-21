@@ -18,7 +18,17 @@ class HabitSyncService {
     if (habits.isEmpty) return;
 
     final data = habits.map((h) => h.toJson()).toList();
+    print('🔄 Uploading ${habits.length} habits to Supabase...');
+    print('📦 Data: $data');
+    print('🔑 Auth User ID: ${_supabase.currentUser?.id}');
+
+    // Überprüfe, ob alle habits die richtige user_id haben
+    for (var habit in habits) {
+      print('   Habit: ${habit.name}, user_id: ${habit.userId}');
+    }
+
     await _supabase.habits().upsert(data, onConflict: 'id');
+    print('✅ Upload completed successfully!');
   }
 
   Future<void> deleteHabit(String habitId) async {
@@ -26,12 +36,14 @@ class HabitSyncService {
   }
 
   Future<List<Habit>> fetchHabitsForUser(String userId) async {
+    print('📥 Fetching habits for user: $userId');
     final response = await _supabase
         .habits()
         .select()
         .eq('user_id', userId)
         .order('created_at', ascending: false);
 
+    print('📦 Received ${(response as List<dynamic>).length} habits from Supabase');
     return (response as List<dynamic>).map((json) {
       final habit = Habit.fromJson(json as Map<String, dynamic>);
       habit.syncStatus = SyncStatus.synced;
@@ -65,6 +77,9 @@ class HabitSyncService {
     DateTime? lastSyncTime,
   }) async {
     try {
+      print('🔄 Starting sync for user: $userId');
+      print('📊 Local habits count: ${localHabits.length}');
+
       final pendingHabits = localHabits
           .where((h) => h.syncStatus == SyncStatus.pending && h.isActive)
           .toList();
@@ -72,6 +87,9 @@ class HabitSyncService {
       final deletedHabits = localHabits
           .where((h) => h.syncStatus == SyncStatus.pending && !h.isActive)
           .toList();
+
+      print('⏳ Pending habits: ${pendingHabits.length}');
+      print('🗑️  Deleted habits: ${deletedHabits.length}');
 
       if (pendingHabits.isNotEmpty) {
         await upsertHabits(pendingHabits);
@@ -85,6 +103,7 @@ class HabitSyncService {
           ? await fetchUpdatedHabits(userId, lastSyncTime)
           : await fetchHabitsForUser(userId);
 
+      print('✅ Sync completed successfully!');
       return SyncResult(
         success: true,
         syncedCount: pendingHabits.length + deletedHabits.length,
@@ -92,6 +111,7 @@ class HabitSyncService {
         deletedIds: deletedHabits.map((h) => h.id).toList(),
       );
     } catch (e) {
+      print('❌ Sync failed: $e');
       return SyncResult(
         success: false,
         errorMessage: e.toString(),

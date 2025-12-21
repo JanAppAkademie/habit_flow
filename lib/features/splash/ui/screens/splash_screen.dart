@@ -23,10 +23,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       if (!mounted) return;
 
       final user = ref.read(authProvider);
+      print('👤 Current user: ${user?.email ?? "null"}, Guest: ${user?.guestMode ?? false}');
 
       if (user != null) {
+        print('➡️  Navigating to home');
         context.go(AppRoutes.home);
       } else {
+        print('➡️  Navigating to login');
         context.go(AppRoutes.login);
       }
     });

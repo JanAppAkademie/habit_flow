@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:habit_flow/core/router/app_router.dart';
 import 'package:habit_flow/features/auth/state/auth/auth_provider.dart';
 import 'package:habit_flow/features/habits/state/habit_provider.dart';
 import 'package:habit_flow/features/habits/state/habit_ui_provider.dart';
@@ -25,10 +27,16 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
 
   Future<void> _initializeAndSync() async {
     final user = ref.read(authProvider);
+    print('🔍 Checking user on init: ${user?.email}, Guest: ${user?.guestMode}, ID: ${user?.id}');
+
     if (user == null) {
+      print('⚠️  No user found, creating guest user');
       await ref.read(authProvider.notifier).createGuestUser();
     } else if (!user.guestMode) {
+      print('✅ Authenticated user found, syncing to cloud');
       await ref.read(habitProvider.notifier).syncToCloud();
+    } else {
+      print('👤 Guest user active, no cloud sync');
     }
   }
 
@@ -80,16 +88,37 @@ class _HabitScreenState extends ConsumerState<HabitScreen> {
     final habits = ref.watch(habitProvider);
     final habitNotifier = ref.read(habitProvider.notifier);
     final uiState = ref.watch(habitUiProvider);
+    final user = ref.watch(authProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Habit Flow'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Habit Flow'),
+            if (user != null)
+              Text(
+                user.guestMode ? 'Gast-Modus' : user.email ?? '',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              ),
+          ],
+        ),
         actions: [
           HabitAppBarActions(
             showProgress: habits.isNotEmpty,
             progressText: habitNotifier.progressText,
             isSyncing: uiState.isSyncing,
             onSync: _syncHabits,
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Abmelden',
+            onPressed: () async {
+              await ref.read(authProvider.notifier).logout();
+              if (context.mounted) {
+                context.go(AppRoutes.login);
+              }
+            },
           ),
         ],
       ),

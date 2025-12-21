@@ -16,7 +16,13 @@ class HabitNotifier extends Notifier<List<Habit>> {
   @override
   List<Habit> build() {
     _box = Hive.box<Habit>('habits');
-    return _box.values.where((h) => h.isActive).toList();
+    try {
+      return _box.values.where((h) => h.isActive).toList();
+    } catch (e) {
+      // Handle corrupted data by clearing the box
+      _box.clear();
+      return [];
+    }
   }
 
   Future<void> addHabit({
@@ -88,8 +94,12 @@ class HabitNotifier extends Notifier<List<Habit>> {
 
   Future<bool> syncToCloud() async {
     final user = ref.read(authProvider);
-    if (user == null || user.guestMode) return false;
+    if (user == null || user.guestMode) {
+      print('⚠️  Cannot sync: User is null or in guest mode');
+      return false;
+    }
 
+    print('🚀 Starting cloud sync for user: ${user.id}');
     await _migrateHabitsToUser(user.id);
 
     final localHabits = _box.values.toList();
@@ -97,7 +107,11 @@ class HabitNotifier extends Notifier<List<Habit>> {
         .where((h) => h.syncStatus == SyncStatus.pending)
         .toList();
 
+    print('📋 Local habits in box: ${localHabits.length}');
+    print('⏳ Pending habits to sync: ${pendingHabits.length}');
+
     if (pendingHabits.isEmpty) {
+      print('📥 No pending habits, fetching from cloud...');
       await fetchFromCloud();
       return true;
     }
@@ -108,6 +122,7 @@ class HabitNotifier extends Notifier<List<Habit>> {
     );
 
     if (result.success) {
+      print('✅ Sync successful! Synced ${result.syncedCount} habits');
       await _markHabitsSynced(pendingHabits);
       await _removeDeletedHabits(result.deletedIds);
       await _mergeRemoteHabits(result.remoteHabits);
@@ -116,6 +131,7 @@ class HabitNotifier extends Notifier<List<Habit>> {
       return true;
     }
 
+    print('❌ Sync failed: ${result.errorMessage}');
     await _markHabitsError(pendingHabits);
     _refreshState();
     return false;
