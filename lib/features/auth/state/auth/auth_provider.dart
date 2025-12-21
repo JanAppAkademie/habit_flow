@@ -15,7 +15,13 @@ class AuthNotifier extends Notifier<User?> {
   @override
   User? build() {
     _box = Hive.box<User>('user');
-    return _box.get('current_user');
+    try {
+      return _box.get('current_user');
+    } catch (e) {
+      // Handle corrupted data by clearing the box
+      _box.clear();
+      return null;
+    }
   }
 
   Future<void> createGuestUser() async {
@@ -42,8 +48,9 @@ class AuthNotifier extends Notifier<User?> {
     );
 
     if (result.success && result.userId != null) {
+      print('🔑 Creating user with Supabase Auth ID: ${result.userId}');
       final user = User(
-        id: result.userId!,
+        id: result.userId!, // Diese ID MUSS die Supabase Auth User-ID sein!
         email: result.email ?? email,
         name: name,
         guestMode: false,
@@ -51,6 +58,7 @@ class AuthNotifier extends Notifier<User?> {
       );
       await _box.put('current_user', user);
       state = user;
+      print('✅ User saved to Hive with ID: ${user.id}');
       await ref.read(habitProvider.notifier).syncToCloud();
     }
 
@@ -64,14 +72,16 @@ class AuthNotifier extends Notifier<User?> {
     final result = await _authService.signIn(email: email, password: password);
 
     if (result.success && result.userId != null) {
+      print('🔑 Signing in user with Supabase Auth ID: ${result.userId}');
       final user = User(
-        id: result.userId!,
+        id: result.userId!, // Diese ID MUSS die Supabase Auth User-ID sein!
         email: result.email ?? email,
         guestMode: false,
         syncStatus: SyncStatus.synced,
       );
       await _box.put('current_user', user);
       state = user;
+      print('✅ User signed in with ID: ${user.id}');
       await ref.read(habitProvider.notifier).syncToCloud();
     }
 
