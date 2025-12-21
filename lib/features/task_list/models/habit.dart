@@ -1,13 +1,41 @@
 import 'package:hive_ce/hive.dart';
+import 'package:uuid/uuid.dart';
+
+final _uuid = Uuid();
 
 class Habit extends HiveObject {
-  Habit({required this.title, this.lastCompletionDate, this.streakCount = 0});
+  Habit({
+    required this.title,
+    this.lastCompletionDate,
+    this.streakCount = 0,
+    String? id,
+    DateTime? updatedAt,
+  }) : id = id ?? _uuid.v4(),
+       updatedAt = (updatedAt ?? DateTime.now()).toUtc();
+
+  factory Habit.fromRemote(Map<String, dynamic> remote) {
+    final lastCompletionRaw = remote['last_completion_date'] as String?;
+    final updatedAtRaw = remote['updated_at'] as String?;
+    return Habit(
+      id: remote['id'] as String? ?? _uuid.v4(),
+      title: remote['title'] as String? ?? '',
+      lastCompletionDate: lastCompletionRaw != null
+          ? DateTime.parse(lastCompletionRaw).toLocal()
+          : null,
+      streakCount: remote['streak_count'] as int? ?? 0,
+      updatedAt: updatedAtRaw != null
+          ? DateTime.parse(updatedAtRaw).toUtc()
+          : DateTime.now().toUtc(),
+    );
+  }
 
   static const boxName = 'habits';
 
   String title;
+  final String id;
   DateTime? lastCompletionDate;
   int streakCount;
+  DateTime updatedAt;
 
   bool get isCompletedToday {
     if (lastCompletionDate == null) {
@@ -46,11 +74,13 @@ class Habit extends HiveObject {
     }
 
     lastCompletionDate = today;
+    touch();
   }
 
   void resetCompletion() {
     lastCompletionDate = null;
     streakCount = 0;
+    touch();
   }
 
   static bool _isSameDay(DateTime a, DateTime b) =>
@@ -58,6 +88,27 @@ class Habit extends HiveObject {
 
   static DateTime _normalizeDate(DateTime date) =>
       DateTime(date.year, date.month, date.day);
+
+  void touch() {
+    updatedAt = DateTime.now().toUtc();
+  }
+
+  void applyRemote(Habit remote) {
+    title = remote.title;
+    lastCompletionDate = remote.lastCompletionDate;
+    streakCount = remote.streakCount;
+    updatedAt = remote.updatedAt;
+  }
+
+  Map<String, dynamic> toRemoteMap() {
+    return {
+      'id': id,
+      'title': title,
+      'last_completion_date': lastCompletionDate?.toUtc().toIso8601String(),
+      'streak_count': streakCount,
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
 }
 
 class HabitAdapter extends TypeAdapter<Habit> {
@@ -71,9 +122,11 @@ class HabitAdapter extends TypeAdapter<Habit> {
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
 
-    final title = fields[0] as String;
+    final title = fields[0] as String? ?? '';
     final rawCompletion = fields[1];
     final rawStreak = fields[2];
+    final rawId = fields[3];
+    final rawUpdatedAt = fields[4];
 
     DateTime? lastCompletion;
     if (rawCompletion is DateTime) {
@@ -86,22 +139,33 @@ class HabitAdapter extends TypeAdapter<Habit> {
         ? rawStreak
         : (lastCompletion != null ? 1 : 0);
 
+    final id = rawId is String && rawId.isNotEmpty ? rawId : _uuid.v4();
+    final updatedAt = rawUpdatedAt is DateTime
+        ? rawUpdatedAt
+        : DateTime.now().toUtc();
+
     return Habit(
       title: title,
       lastCompletionDate: lastCompletion,
       streakCount: streak,
+      id: id,
+      updatedAt: updatedAt,
     );
   }
 
   @override
   void write(BinaryWriter writer, Habit obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.title)
       ..writeByte(1)
       ..write(obj.lastCompletionDate)
       ..writeByte(2)
-      ..write(obj.streakCount);
+      ..write(obj.streakCount)
+      ..writeByte(3)
+      ..write(obj.id)
+      ..writeByte(4)
+      ..write(obj.updatedAt);
   }
 }
