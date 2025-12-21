@@ -6,19 +6,36 @@ class Task extends HiveObject {
     required this.title,
     this.isCompleted = false,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+    DateTime? updatedAt,
+  })  : createdAt = createdAt ?? DateTime.now(),
+        updatedAt = updatedAt ?? DateTime.now();
 
   final String id;
   final String title;
   final bool isCompleted;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
-  Task copyWith({String? title, bool? isCompleted, DateTime? createdAt}) {
+  Task copyWith({String? title, bool? isCompleted, DateTime? updatedAt}) {
     return Task(
       id: id,
       title: title ?? this.title,
       isCompleted: isCompleted ?? this.isCompleted,
-      createdAt: createdAt ?? this.createdAt,
+      createdAt: this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  factory Task.fromSupabase(Map<String, dynamic> data) {
+    final createdAtValue = data['created_at'] as String;
+    final updatedAtValue =
+        data['updated_at'] as String? ?? createdAtValue;
+    return Task(
+      id: data['id'] as String,
+      title: data['title'] as String,
+      isCompleted: data['is_completed'] as bool? ?? false,
+      createdAt: DateTime.parse(createdAtValue),
+      updatedAt: DateTime.parse(updatedAtValue),
     );
   }
 }
@@ -33,18 +50,23 @@ class TaskAdapter extends TypeAdapter<Task> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+    final createdAt =
+        DateTime.fromMillisecondsSinceEpoch(fields[3] as int);
     return Task(
       id: fields[0] as String,
       title: fields[1] as String,
       isCompleted: fields[2] as bool,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(fields[3] as int),
+      createdAt: createdAt,
+      updatedAt: fields[4] == null
+          ? createdAt
+          : DateTime.fromMillisecondsSinceEpoch(fields[4] as int),
     );
   }
 
   @override
   void write(BinaryWriter writer, Task obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -52,6 +74,8 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(2)
       ..write(obj.isCompleted)
       ..writeByte(3)
-      ..write(obj.createdAt.millisecondsSinceEpoch);
+      ..write(obj.createdAt.millisecondsSinceEpoch)
+      ..writeByte(4)
+      ..write(obj.updatedAt.millisecondsSinceEpoch);
   }
 }

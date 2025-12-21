@@ -9,17 +9,23 @@ class ItemList extends StatelessWidget {
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
+    this.shrinkWrap = false,
+    this.physics,
   });
 
   final List<Task> tasks;
   final void Function(Task task) onToggle;
   final void Function(Task task) onEdit;
   final void Function(Task task) onDelete;
+  final bool shrinkWrap;
+  final ScrollPhysics? physics;
 
   @override
   Widget build(BuildContext context) {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shrinkWrap: shrinkWrap,
+      physics: physics,
       itemCount: tasks.length,
       itemBuilder: (context, index) {
         final task = tasks[index];

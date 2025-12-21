@@ -32,5 +32,14 @@ class HabitRepository {
     await _taskBox.delete(id);
   }
 
+  Future<void> saveTasks(Iterable<Task> tasks) async {
+    final entries = <String, Task>{};
+    for (final task in tasks) {
+      entries[task.id] = task;
+    }
+    if (entries.isEmpty) return;
+    await _taskBox.putAll(entries);
+  }
+
   Stream<BoxEvent> watchTasks() => _taskBox.watch();
 }
