@@ -4,6 +4,7 @@ import 'package:habit_flow/core/models/habit.dart';
 import 'package:habit_flow/features/task_list/state/task_provider.dart';
 import 'package:habit_flow/features/task_list/widgets/empty_content.dart';
 import 'package:habit_flow/features/task_list/widgets/item_list.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ListScreen extends ConsumerWidget {
   ListScreen({super.key});
@@ -81,6 +82,15 @@ class ListScreen extends ConsumerWidget {
                             await ref
                                 .read(taskListProvider.notifier)
                                 .addTask(newHabit);
+                            final future = await Supabase.instance.client
+                                .from('Habit')
+                                .select();
+
+                            final client = Supabase.instance.client;
+                            print(newHabit.toMap());
+                            await client.from('Habit').insert(newHabit.toMap());
+                            print(newHabit.toMap());
+                            print(future);
                             textController.clear();
                           },
                         ),

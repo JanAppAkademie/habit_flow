@@ -1,6 +1,6 @@
 name: habit_flow
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 
 version: 1.0.0+1
 
@@ -22,6 +22,8 @@ dependencies:
   go_router: ^14.8.1
   google_fonts: ^6.2.1
   shimmer: ^3.0.0
+  flutter_dotenv: ^6.0.0
+  supabase_flutter: ^2.12.0
 
 dev_dependencies:
   flutter_test:
@@ -38,3 +40,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - .env
