@@ -15,10 +15,10 @@ void main() async {
   await Hive.initFlutter();
 
   Hive.registerAdapter(HabitAdapter());
-  await Hive.openBox<Habit>('habits');
+  await Hive.openBox<Habit>('habitsBox');
   await Supabase.initialize(
     url: supabaseUrl,
     anonKey: supabaseKey,
   );
-  runApp(ProviderScope(child: const App()));
+  runApp(const ProviderScope(child: App()));
 }

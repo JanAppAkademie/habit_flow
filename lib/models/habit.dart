@@ -26,10 +26,10 @@ class Habit extends HiveObject {
   DateTime? createdAt;
 
   Habit({
-    required this.userId,
-    required this.id,
+    this.userId,
+    this.id,
     required this.name,
-    required this.description,
+    this.description,
     this.isCompleted = false,
     this.completedDates,
     this.createdAt,
