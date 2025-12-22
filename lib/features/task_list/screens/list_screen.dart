@@ -87,10 +87,10 @@ class ListScreen extends ConsumerWidget {
                                 .select();
 
                             final client = Supabase.instance.client;
-                            print(newHabit.toMap());
+
                             await client.from('Habit').insert(newHabit.toMap());
-                            print(newHabit.toMap());
-                            print(future);
+                            // log(newHabit.toMap().toString());
+                            // log(future.toString());
                             textController.clear();
                           },
                         ),
